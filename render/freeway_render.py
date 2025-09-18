@@ -1,0 +1,158 @@
+import pygame
+import numpy as np
+from PIL import Image
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+from envs.minatar.environment import Environment
+from envs.minatar.environments.freeway import Env
+
+class FreewayRenderer:
+    def __init__(self, cell_size=60, assets_path="render/freeway/"):
+        pygame.init()
+        self.cell_size = cell_size
+        self.width = 9 * cell_size  # 9 columns
+        self.height = 10 * cell_size  # 10 rows
+        self.assets_path = assets_path
+        self.sprites = {}
+        self.load_sprites()
+        self.font = pygame.font.Font(None, 36)
+        
+    def load_sprites(self):
+        sprite_files = {
+            'chicken': 'chicken.png',      # 玩家（小鸡）
+            'car_1': 'car1.png',         # 长度为1的车
+            'car_2': 'car2.png',         # 长度为2的车
+            'car_3': 'car3.png',         # 长度为3的车
+            'car_4': 'car4.png',         # 长度为4的车
+            'grey': 'grey.png',           # 灰色道路
+            'yellow': 'yellow.png',       # 黄色道路（玩家过路点）
+            'grass': 'grass.png',         # 草地背景
+            'target': 'map-pin.png',  # 目标点
+            'hit': 'hit.png',
+            'thinking': 'thinking.png', 
+            'idea': 'idea.png',        # 添加想法图标
+        }
+        
+        for name, filename in sprite_files.items():
+            filepath = os.path.join(self.assets_path, filename)
+            if os.path.exists(filepath):
+                sprite = pygame.image.load(filepath)
+                if name.startswith('car_'):
+                    length = int(name.split('_')[1])
+                    sprite = pygame.transform.scale(sprite, (self.cell_size * length, self.cell_size))
+                elif name in ['thinking', 'idea']:
+                    sprite = pygame.transform.scale(sprite, (self.cell_size * 1.2, self.cell_size * 1.2))
+                else:
+                    sprite = pygame.transform.scale(sprite, (self.cell_size * 0.95, self.cell_size * 0.95))
+                self.sprites[name] = sprite
+            else:
+                raise FileNotFoundError(f"Sprite file {filename} not found in {self.assets_path}.")
+
+    def render(self, env, show_hit=False, show_thinking=None, method=None):
+        surface = pygame.Surface((self.width, self.height))
+        surface.fill((255, 255, 255))  
+        for i in range(10):  # rows
+            for j in range(9):  # columns
+                pos = (j * self.cell_size, i * self.cell_size)
+                if i == 0 or i == 9:  
+                    surface.blit(self.sprites['grass'], pos)
+                else:
+                    if j == 4:
+                        surface.blit(self.sprites['yellow'], pos)
+                    else:
+                        surface.blit(self.sprites['grey'], pos)
+                    if j < 8:
+                        line_x = (j + 1) * self.cell_size - 1
+                        pygame.draw.line(surface, (255, 255, 255), 
+                                    (line_x, i * self.cell_size), 
+                                    (line_x, (i + 1) * self.cell_size), 1)
+        for car in env.cars:
+            x, y, timer, speed, length = car
+            if x is None or speed is None:
+                continue
+                
+            is_right = speed > 0
+            car_y = y * self.cell_size
+            
+            if is_right:
+                car_x = (x - length + 1) * self.cell_size
+            else:
+                car_x = x * self.cell_size
+            
+            if car_x + length * self.cell_size > 0 and car_x < self.width:
+                sprite = self.get_vehicle_sprite(length, is_right)
+                surface.blit(sprite, (car_x, car_y))
+        
+        player_x = 4 * self.cell_size
+        player_y = env.pos * self.cell_size
+        target_x = player_x
+        target_y = 0
+        surface.blit(self.sprites['target'], (target_x, target_y))
+        surface.blit(self.sprites['chicken'], (player_x, player_y))        
+        if show_hit:
+            surface.blit(self.sprites['hit'], (player_x, player_y))
+        
+        if show_thinking is not None:
+            thinking_offset_x = self.cell_size * 0.7
+            thinking_offset_y = -self.cell_size * 0.5
+            thinking_x = player_x + thinking_offset_x
+            thinking_y = player_y + thinking_offset_y
+            
+            if show_thinking:
+                surface.blit(self.sprites['thinking'], (thinking_x, thinking_y))
+            else:
+                surface.blit(self.sprites['idea'], (thinking_x, thinking_y))
+        
+        self.draw_game_info(surface, env, method)
+        
+        return surface
+    
+    def get_vehicle_sprite(self, vehicle_length, is_right_direction):
+        sprite_name = f'car_{vehicle_length}'
+        base_sprite = self.sprites[sprite_name]
+        
+        if is_right_direction:
+            return base_sprite
+        else:
+            return pygame.transform.flip(base_sprite, True, False)
+    
+    def draw_game_info(self, surface, env, method=None):
+        assert method
+        info_text = f"Turn: {env.game_turn}"
+        text_surface = self.font.render(info_text, True, (255, 255, 255))
+        
+        text_rect = text_surface.get_rect()
+        text_rect.topleft = (self.cell_size // 4, self.cell_size // 4)
+        bg_rect = text_rect.inflate(10, 5)
+        pygame.draw.rect(surface, (0, 0, 0), bg_rect)
+        surface.blit(text_surface, text_rect)        
+        
+        if env.terminal:
+            if env.game_turn < 100:
+                end_text = f"SUCCESS in {env.game_turn} turns!" 
+                color = (0, 255, 0)
+            else:
+                end_text = "GAME OVER"
+                color = (255, 0, 0)
+            
+            end_surface = pygame.font.Font(None, 48).render(end_text, True, color)
+            end_rect = end_surface.get_rect()
+            end_rect.center = (self.width // 2, self.height // 2)
+            
+            overlay = pygame.Surface((self.width, self.height))
+            overlay.set_alpha(128)
+            overlay.fill((0, 0, 0))
+            surface.blit(overlay, (0, 0))
+            surface.blit(end_surface, end_rect)
+
+    def surface_to_pil(self, surface):
+        """将 pygame Surface 转为 PIL Image"""
+        data = pygame.image.tostring(surface, 'RGB')
+        img = Image.frombytes('RGB', surface.get_size(), data)
+        return img
+    
+    def save_frame(self, env, filename, show_hit=False, show_thinking=None, method=None):
+        surface = self.render(env, show_hit, show_thinking, method)
+        img = self.surface_to_pil(surface)
+        img.save(filename)

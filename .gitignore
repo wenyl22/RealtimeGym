@@ -1,0 +1,4 @@
+logs
+*.csv
+*.log
+*.sh
