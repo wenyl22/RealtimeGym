@@ -36,12 +36,12 @@ class LLMClient:
         self.api_keys = api_keys[0]
         self.to_flush = ""
         self.to_flush_turn = 0
+        self.gen_turn = 0
         self.gen_accum = 0
         self.gen_text = ""
         self.gen_token = []
         self.gen_token_num = 0
-        self.gen_turn = 0
-        self.turns = []
+#        self.turns = []
         self.slow_llm = None
         self.fast_llm = None
 

@@ -2,3 +2,10 @@ logs
 *.csv
 *.log
 *.sh
+vis*
+debug*
+__pycache__
+*/__pycache__
+*/*/__pycache__
+*/*/*/__pycache__
+*.pyc

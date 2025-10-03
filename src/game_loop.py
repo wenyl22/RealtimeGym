@@ -37,13 +37,15 @@ def main_game_loop(file, seed, args):
     start_time = time.time()
     logs = defaultdict(list)
 
-    while env.env.terminal == False and env.env.game_turn <= 8:
+    while env.env.terminal == False:
         logs['render'].append('\n' + env.env.state_string())
-        state_for_llm = env_m.llm_state_builder(env.env)
-        state_description = env_m.state_to_description(state_for_llm, fast = False)
         fast_agent_response, slow_agent_response = "", ""
         fast_agent_prompt, slow_agent_prompt = "", ""
         fast_response_token_num, slow_response_token_num = 0, 0
+
+        state_for_llm = env_m.llm_state_builder(env.env)
+        state_description = env_m.state_to_description(state_for_llm, fast = False)
+        
         ### --- Slow Agent --- ###
         meta_control = meta_controller(args, client, env)
         if meta_control:
