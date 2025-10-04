@@ -1,5 +1,5 @@
 import numpy as np
-from environments.base import BaseEnv
+from .base import BaseEnv
 from copy import deepcopy
 from .render.snake_render import SnakeRender
 seed_mapping = {
