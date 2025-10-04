@@ -16,7 +16,7 @@ class BaseAgent:
 
         self.logs = defaultdict(list)
         # better not set log_thinking to True for time-based budget, since storing logs can be slow and interfere with timing
-        self.log_thinking = True #if budget_form == "token" else False
+        self.log_thinking = True if budget_form == "token" else False
         self.action = prompts.DEFAULT_ACTION
         self.to_flush = ""
         self.to_flush_turn = 0
