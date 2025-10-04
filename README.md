@@ -1,8 +1,21 @@
-### Real-time Gym
+### Real-time Reasoning Gym
+Installation:
 ```bash
-python src/run.py --game [game_name] --difficulty [E/M/H] --token_per_tick [] --fast_max_token [] \
-    --method [slow/fast/parallel] \
-    --api_keys [your_api_keys] \
-    --fast_model [system1_model_name] --fast_base_url [system1_model_url] \
-    --slow_model [system2_model_name] --slow_base_url [system2_model_url]
+pip install -e .
+```
+
+
+Example Usage: 
+
+If `budget_format == time`, then  `time_pressure` and `internal_budget` are physical times (unit: second).
+If `budget_format == token`, then `time_pressure` and `internal_budget` are token numbers.
+
+```bash
+python run_game.py --api_key DEEPSEEK_API_KEY \
+    --port https://api.deepseek.com/v3.1_terminus_expires_on_20251015 \
+    --model2 deepseek-reasoner --model1 deepseek-chat \
+    --budget_format [token/time] \
+    --game [freeway/snake/overcooked] --cognitive_load [E/M/H] --time_pressure 8192 \
+    --system [planning/reactive/agile] --internal_budget 4096 \
+    --log_dir logs --seed_num [1-8]
 ```

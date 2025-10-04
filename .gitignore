@@ -1,11 +1,13 @@
-logs
+*logs
 *.csv
 *.log
 *.sh
-vis*
+visualize_html.py
 debug*
 __pycache__
 */__pycache__
 */*/__pycache__
 */*/*/__pycache__
 *.pyc
+*.txt
+*.egg-info
