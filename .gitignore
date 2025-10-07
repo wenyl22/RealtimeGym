@@ -1,4 +1,4 @@
-*logs
+*logs*
 *.csv
 *.log
 *.sh
@@ -11,3 +11,4 @@ __pycache__
 *.pyc
 *.txt
 *.egg-info
+*.ipynb

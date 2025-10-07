@@ -7,6 +7,7 @@ from realtimegym.agents.reactive import ReactiveAgent
 from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.agile import AgileThinker
 import pygame
+import time
 from PIL import Image
 def check_args(args):
     if args.system == "planning":
@@ -38,6 +39,7 @@ def game_loop(file, raw_seed, args):
         agent = AgileThinker(**params)
     else:
         raise NotImplementedError("System not recognized.")
+    start_time = time.time()
     surfaces = []
     if render is not None:
         surfaces.append(render.render(env))
@@ -55,7 +57,7 @@ def game_loop(file, raw_seed, args):
         images = [pygame.surfarray.array3d(surface) for surface in surfaces]
         pil_images = [Image.fromarray(images[i].swapaxes(0, 1)) for i in range(len(images))]
         pil_images[0].save(gif_path, save_all=True, append_images=pil_images[1:], duration=1000, loop=0)
-    ret = { 'seed': seed, 'reward': env.reward, }
+    ret = { 'seed': seed, 'reward': env.reward, 'total_time': time.time() - start_time, 'log_dir': os.path.dirname(file)}
     del env
     return ret
 
@@ -65,7 +67,7 @@ if __name__ == "__main__":
     args.add_argument('--port', type=str, default='https://api.deepseek.com')
     args.add_argument('--model1', type=str, default = 'deepseek-chat')
     args.add_argument('--model2', type=str, default = 'deepseek-reasoner')    
-    args.add_argument('--game', type=str, choices=['freeway', 'snake', 'overcooked'])
+    args.add_argument('--game', type=str, choices=['freeway', 'snake', 'overcooked'], default='freeway')
     args.add_argument('--budget_format', type=str, choices=['token', 'time'], default='token')
     args.add_argument('--time_pressure', type=int, default=8192)
     args.add_argument('--cognitive_load', type=str, choices=['E', 'M', 'H'])
@@ -75,19 +77,34 @@ if __name__ == "__main__":
     args.add_argument('--seed_num', type=int, default=1)
     args.add_argument('--repeat_times', type=int, default=1)
     args.add_argument('--save_trajectory_gifs', action='store_true', default=False)
+    args.add_argument('--settings', type=str, nargs='+', default=[])
+    args.add_argument('--instance_num', type=int, default=None)
     args = args.parse_args()
-    log_dir = f"{args.log_dir}/{args.game}_{args.cognitive_load}_{args.time_pressure}_{args.system}_{args.internal_budget}"
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    check_args(args)
+    settings = []
+    if args.settings == []:
+        settings = [f"{args.game}_{args.cognitive_load}_{args.time_pressure}_{args.system}_{args.internal_budget}"]
     instance = []
-    for seed in range(args.seed_num):
-        for r in range(args.repeat_times):        
-            instance.append((log_dir + f'/{r}_{seed}.csv', seed, args))
-    with open(log_dir + '/args.log', 'w') as f:
-        for arg, value in vars(args).items():
-            f.write(f"{arg}: {value}\n")
-        f.write("\n")
+    for setting in args.settings:
+        new_args = argparse.Namespace(**vars(args))
+        game, cognitive_load, time_pressure, system, internal_budget = setting.split('_')
+        new_args.game = game
+        new_args.cognitive_load = cognitive_load
+        new_args.time_pressure = int(time_pressure)
+        new_args.system = system
+        new_args.internal_budget = int(internal_budget)
+        check_args(new_args)
+        log_dir = new_args.log_dir + f'/{setting}'
+        for seed in range(args.seed_num):
+            for r in range(args.repeat_times):
+                instance.append((log_dir + f'/{r}_{seed}.csv', seed, new_args))
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        with open(log_dir + '/args.log', 'w') as f:
+            for arg, value in vars(new_args).items():
+                f.write(f"{arg}: {value}\n")
+            f.write("\n")
+    if args.instance_num is not None:
+        assert args.instance_num == len(instance), "instance_num incorrect!"
     with ThreadPoolExecutor(max_workers=len(instance)) as executor:
         futures = [
             executor.submit(game_loop, log_file, seed, args) for (log_file, seed, args) in instance
@@ -96,11 +113,14 @@ if __name__ == "__main__":
         total = len(futures)
         for idx, future in enumerate(as_completed(futures), 1):
             result = future.result()
+            log_dir = result['log_dir']
+            # remove log_dir from result
+            del result['log_dir']
             results.append(result)
             with open(f'{log_dir}/args.log', 'a') as f:
                 for key, value in result.items():
                     f.write(f"{key}: {value} ")
-                f.write("\n---------------------------------------\n")
+                f.write("\n-----------------------------\n")
             print(f"Progress: {idx}/{total} ({idx/total*100:.2f}%)")
     with open(f'{log_dir}/args.log', 'a') as f:
         f.write("\nSummary:\n")
