@@ -16,18 +16,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "gym==0.26.2",
-    "imageio==2.37.0",
-    "ipython==8.12.3",
-    "ipywidgets==8.1.5",
-    "numpy==1.26.4",
-    "openai==1.95.1",
-    "pandas==2.3.3",
-    "pygame==2.6.1",
-    "scipy==1.16.0",
-    "setuptools==79.0.0",
-    "tqdm==4.66.2",
-    "transformers==4.51.3",
 ]
 
 [project.urls]

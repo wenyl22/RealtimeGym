@@ -1,11 +1,14 @@
 
+import pandas as pd
 import argparse
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from importlib import import_module
-from realtimegym.agents.reactive import ReactiveAgent
-from realtimegym.agents.planning import PlanningAgent
-from realtimegym.agents.agile import AgileThinker
+from src.realtimegym.agents.reactive import ReactiveAgent
+from src.realtimegym.agents.planning import PlanningAgent
+from src.realtimegym.agents.agile import AgileThinker
 import pygame
 import time
 from PIL import Image
@@ -22,7 +25,8 @@ def game_loop(file, raw_seed, args):
         "prompts": import_module('realtimegym.environments.prompts.' + args.game),
         "file": file,
         "budget_form": args.budget_format,
-        "port": args.port,
+        "port1": args.port1,
+        "port2": args.port2,
         "api_key": args.api_key,
         "internal_budget": args.internal_budget,
         "model1": args.model1 if args.system != "planning" else None,
@@ -39,6 +43,17 @@ def game_loop(file, raw_seed, args):
         agent = AgileThinker(**params)
     else:
         raise NotImplementedError("System not recognized.")
+    if args.checkpoint is not None: # resume from checkpoint
+        checkpoint_file = file.replace(args.log_dir, args.checkpoint)
+        df = pd.read_csv(checkpoint_file)
+        for a in df['action']:
+            env.act(a)
+        if env.terminal:
+            ret = { 'seed': seed, 'reward': env.reward, 'total_time': 0, 'log_dir': os.path.dirname(file)}
+            return ret
+        else:
+            env, seed, render = env_m.setup_env(raw_seed, args.cognitive_load, args.save_trajectory_gifs)
+            agent.resume_from_checkpoint(env, checkpoint_file)
     start_time = time.time()
     surfaces = []
     if render is not None:
@@ -64,7 +79,8 @@ def game_loop(file, raw_seed, args):
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description='Real-time reasoning gym configurations.')
     args.add_argument('--api_key', type=str, default='')
-    args.add_argument('--port', type=str, default='https://api.deepseek.com')
+    args.add_argument('--port1', type=str, default='https://api.deepseek.com')
+    args.add_argument('--port2', type=str, default='https://api.deepseek.com')
     args.add_argument('--model1', type=str, default = 'deepseek-chat')
     args.add_argument('--model2', type=str, default = 'deepseek-reasoner')    
     args.add_argument('--game', type=str, choices=['freeway', 'snake', 'overcooked'], default='freeway')
@@ -79,6 +95,7 @@ if __name__ == "__main__":
     args.add_argument('--save_trajectory_gifs', action='store_true', default=False)
     args.add_argument('--settings', type=str, nargs='+', default=[])
     args.add_argument('--instance_num', type=int, default=None)
+    args.add_argument('--checkpoint', type=str, default=None)
     args = args.parse_args()
     settings = []
     if args.settings == []:

@@ -1,16 +1,28 @@
 from .base import BaseAgent, extract_boxed
 from openai import OpenAI
 from transformers import AutoTokenizer
-
+import re
 class AgileThinker(BaseAgent):
-    def __init__(self, prompts, file, budget_form, port, api_key, internal_budget, **kwargs):
+    def __init__(self, prompts, file, budget_form, port1, port2, api_key, internal_budget, **kwargs):
 
-        super().__init__(prompts, file, budget_form, port, api_key, internal_budget)
+        super().__init__(prompts, file, budget_form, port1, port2, api_key, internal_budget)
         self.model1 = kwargs.get('model1', None)
         self.model2 = kwargs.get('model2', None)
         if "deepseek-reasoner" in self.model2:
             self.tokenizer = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-R1")
+        if "gpt-oss-20b" in self.model2:
+            self.tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
+        if "Qwen3-30B-A3B-Thinking-2507-FP8" in self.model2:
+            self.tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-30B-A3B-Thinking-2507-FP8")
         # TODO: add more open source model's tokenizer here
+
+    def truncate_logs(self):
+        final_step = 0
+        for i in range(len(self.logs['action'])):
+            if "model2_prompt" in self.logs and self.logs["model2_prompt"][i] != "":
+                final_step = i
+        for col in self.logs:
+            self.logs[col] = self.logs[col][:final_step]
 
     def think(self, observation, budget):
         self.state_string = observation['state_string']
@@ -36,7 +48,7 @@ class AgileThinker(BaseAgent):
                 prompt += f"> {line.strip()}\n"
         messages = [ {"role": "user", "content": prompt} ]
         text, token_num = self.reactive_inference(messages)
-        self.action = extract_boxed(text)
+        self.action = re.sub(r'[^' + self.prompts.ALL_ACTIONS + ']', '', extract_boxed(text))
         if self.log_thinking:
             self.logs['model1_prompt'].append(prompt)
             self.logs['model1_response'].append(text)

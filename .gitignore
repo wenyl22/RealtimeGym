@@ -12,3 +12,6 @@ __pycache__
 *.txt
 *.egg-info
 *.ipynb
+*.out
+*.sbatch
+*.err

@@ -1,15 +1,19 @@
 from .base import BaseAgent, extract_boxed
-
+import re
 class ReactiveAgent(BaseAgent):
-    def __init__(self, prompts, file, budget_form, port, api_key, internal_budget, **kwargs):
-        super().__init__(prompts, file, budget_form, port, api_key, internal_budget)
+    def __init__(self, prompts, file, budget_form, port1, port2, api_key, internal_budget, **kwargs):
+        super().__init__(prompts, file, budget_form, port1, port2, api_key, internal_budget)
         self.model1 = kwargs.get('model1', None)
-    
+    def truncate_logs(self):
+        return
+
     def think(self, observation, budget):
         self.state_string = observation['state_string']
         messages = [ {"role": "user", "content": self.prompts.FAST_AGENT_PROMPT + observation['model1_description']} ]
         text, token_num = self.reactive_inference(messages)
-        self.action = extract_boxed(text)
+        self.action = re.sub(r'[^' + self.prompts.ALL_ACTIONS + ']', '', extract_boxed(text))
+        if self.action == "":
+            self.action = self.prompts.DEFAULT_ACTION
         if self.log_thinking:
             self.logs['plan'].append("N/A")
             self.logs['model1_prompt'].append(messages[-1]['content'])
