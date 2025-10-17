@@ -106,7 +106,7 @@ class OvercookedEnv(BaseEnv):
         self.terminal = eval_done[0]
         self.history[0].append(Action.A_TO_CHAR[joint_action[0]])
         self.history[1].append(Action.A_TO_CHAR[joint_action[1]])
-        return self.reward, self.terminal
+        return self.reward, False
     def state_string(self):
         ret = self.gym_env.base_mdp.state_string(self.gym_env.base_env.state)
         ret = ret.split('\n')

@@ -3,7 +3,28 @@ from openai import OpenAI
 from typing import List, Dict
 import time
 import pandas as pd
+import queue
+import threading
 
+def regularize_param(sampling_params, model, messages):
+    reasoning_effort = None
+    if "gpt-oss" in model:
+        reasoning_effort = model.split("-")[-1]
+        model = model.replace("-" + reasoning_effort, "")
+    params = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": sampling_params.get("max_tokens", 80000),
+        "temperature": sampling_params.get("temperature", 1),
+        "top_p": sampling_params.get("top_p", 1),
+    }
+    if "deepseek-reasoner" in model:
+        params["max_tokens"] = min(params["max_tokens"], 65536)
+    elif "deepseek" in model or "Qwen" in model:
+        params["max_tokens"] = min(params["max_tokens"], 32768)
+    if reasoning_effort is not None:
+        params["reasoning_effort"] = reasoning_effort
+    return params
 class BaseAgent:
     def __init__(self, prompts, file, budget_form, port1, port2, api_key, internal_budget):
         self.prompts = prompts
@@ -27,7 +48,8 @@ class BaseAgent:
         self.gen_text = ""
         self.gen_token = []
         self.gen_token_num = 0
-        self.planning_stream = None
+        self.planning_queue = None
+        self.planning_done = None
         self.planning_reasoning = False
         self.plan = ""
         self.state_string = ""
@@ -42,8 +64,12 @@ class BaseAgent:
         self.logs['reward'].append(reward)
         if reset == True:
             self.plan = ""
-            while self.gen_text != "":
-                self.planning_inference([], 80000, 0)
+            if self.budget_form == "token":
+                while self.gen_text != "":
+                    self.planning_inference([], 80000, 0)
+            else:
+                while self.gen_text != "":
+                    self.planning_inference([], 10.0 + self.internal_budget, 0)
             self.to_flush = ""
         df = pd.DataFrame(self.logs)
         df.to_csv(self.file)
@@ -59,23 +85,7 @@ class BaseAgent:
     def truncate_logs(self):
         raise NotImplementedError("This method should be overridden by subclasses.")
     def generate(self, llm, model: str, messages: List[Dict], sampling_params: Dict) -> str:
-        reasoning_effort = None
-        if "gpt-oss" in model:
-            reasoning_effort = model.split("-")[-1]
-            model = model.replace("-" + reasoning_effort, "")
-        params = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": sampling_params.get("max_tokens", 80000),
-            "temperature": sampling_params.get("temperature", 1),
-            "top_p": sampling_params.get("top_p", 1),
-        }
-        if "deepseek" in model or "Qwen" in model:
-            params["max_tokens"] = min(params["max_tokens"], 32768)
-        if reasoning_effort is not None:
-            params["reasoning_effort"] = reasoning_effort
-
-        #print(params)
+        params = regularize_param(sampling_params, model, messages)
         while True:
             try:
                 text = ""
@@ -90,57 +100,100 @@ class BaseAgent:
                 print(f"Error: {e}")
                 time.sleep(1)
 
-    def streaming_generate(self, llm, model: str, messages: List[Dict], sampling_params: Dict, stream_obj = None) -> str:
-        params = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": sampling_params.get("max_tokens", 80000),
-            "temperature": sampling_params.get("temperature", 1),
-            "top_p": sampling_params.get("top_p", 1),
-            "stream": True,
-        }
-        max_time = sampling_params["max_time"]
-        start_time = time.time()
-        text, token_num = "", 0
-        if stream_obj is None:
-            while True:
-                try:
-                    stream_obj = llm.chat.completions.create(**params)
-                    break
-                except Exception as e:
-                    print(f"Error: {e}")
-                    time.sleep(1)
-        try:
-            for chunk in stream_obj:
-                if time.time() - start_time > max_time:
-                    return text, token_num, stream_obj
-                if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content != None:
-                    if self.planning_reasoning == False:
-                        text += "<think>"
-                        self.planning_reasoning = True
-                    text += chunk.choices[0].delta.reasoning_content
-                if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content != None:
-                    if self.planning_reasoning == True:
-                        text += "\n</think>\n"
-                        self.planning_reasoning = False
-                    text += chunk.choices[0].delta.content
-                if hasattr(chunk, 'usage') and chunk.usage is not None:
-                    token_num = chunk.usage.completion_tokens
-        except Exception as e:
-            print(f"Error during streaming: {e}")
-            return text, token_num, None
-        # uncomment the following line for realistic simulation
-        # time.sleep(max_time - (time.time() - start_time) if max_time - (time.time() - start_time) > 0 else 0)
-        return text, token_num, None
+    def start_planning_stream(self, llm, model: str, messages: List[Dict], sampling_params: Dict) -> str:
+        self.planning_queue = queue.Queue()
+        self.planning_done = threading.Event()
+        params = regularize_param(sampling_params, model, messages)
+        params["stream"] = True
+        def planning_worker():
+            try:
+                stream_obj = llm.chat.completions.create(**params)
+                for chunk in stream_obj:
+                    self.planning_queue.put(chunk)
+                self.planning_done.set()
+            except Exception as e:
+                print(f"Streaming error: {e}")
+                self.planning_done.set()
+        threading.Thread(target=planning_worker, daemon=True).start()
+    def get_planning_chunks(self):
+        text = ""
+        token_num = 0
+        while not self.planning_queue.empty():
+            chunk = self.planning_queue.get()
+            if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content != None:
+                if self.planning_reasoning == False:
+                    text += "<think>"
+                    self.planning_reasoning = True
+                text += chunk.choices[0].delta.reasoning_content
+            if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content != None:
+                if self.planning_reasoning == True:
+                    text += "\n</think>\n"
+                    self.planning_reasoning = False
+                text += chunk.choices[0].delta.content
+            if hasattr(chunk, 'usage') and chunk.usage is not None:
+                token_num = chunk.usage.completion_tokens
+        return text, token_num
+    def is_planning_finished(self):
+        return self.planning_done.is_set()
 
-    def reactive_inference(self, messages):
+    def start_reactive_stream(self, llm, model, messages, sampling_params, max_time):
+        params = regularize_param(sampling_params, model, messages)
+        params["stream"] = True
+        start_time = time.time()
+        stream_obj = llm.chat.completions.create(**params)
+        text, token_num = "", 0
+        for chunk in stream_obj:
+            if time.time() - start_time > max_time:
+                break
+            if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content != None:
+                text += chunk.choices[0].delta.content
+            if hasattr(chunk, 'usage') and chunk.usage is not None:
+                token_num = chunk.usage.completion_tokens
+        current_time = time.time()
+        if max_time - (current_time - start_time) > 0:
+            time.sleep(max_time - (current_time - start_time))
+        return text, token_num
+        # max_time = sampling_params["max_time"]
+        # start_time = time.time()
+        # text, token_num = "", 0
+        # if stream_obj is None:
+        #     while True:
+        #         try:
+        #             stream_obj = llm.chat.completions.create(**params)
+        #             break
+        #         except Exception as e:
+        #             print(f"Error: {e}")
+        #             time.sleep(1)
+        # try:
+        #     for chunk in stream_obj:
+        #         if time.time() - start_time > max_time:
+        #             return text, token_num, stream_obj
+        #         if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content != None:
+        #             if self.planning_reasoning == False:
+        #                 text += "<think>"
+        #                 self.planning_reasoning = True
+        #             text += chunk.choices[0].delta.reasoning_content
+        #         if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content != None:
+        #             if self.planning_reasoning == True:
+        #                 text += "\n</think>\n"
+        #                 self.planning_reasoning = False
+        #             text += chunk.choices[0].delta.content
+        #         if hasattr(chunk, 'usage') and chunk.usage is not None:
+        #             token_num = chunk.usage.completion_tokens
+        # except Exception as e:
+        #     print(f"Error during streaming: {e}")
+        #     return text, token_num, None
+        # return text, token_num, None
+
+    def reactive_inference(self, messages, budget):
         assert self.model1 is not None, "Reactive LLM is not initialized!"
         if self.budget_form == "token":
             sampling_params = {"max_tokens": self.internal_budget, "temperature": 1, "top_p": 1}
             text, token_num = self.generate(self.llm1, self.model1, messages, sampling_params)
         else:
-            sampling_params = {"max_time": self.internal_budget, "temperature": 1, "top_p": 1, "max_tokens": 8192}
-            text, token_num, _ = self.streaming_generate(self.llm1, self.model1, messages, sampling_params)
+            sampling_params = {"temperature": 1, "top_p": 1, "max_tokens": 8192}
+            text, token_num = self.start_reactive_stream(self.llm1, self.model1, messages, sampling_params, self.internal_budget)
+            time.sleep(budget - self.internal_budget)
         if "<think>" in text and "</think>" not in text:
             text += "</think>"
         if "oxed" in text.split('</think>')[-1]:
@@ -192,31 +245,21 @@ class BaseAgent:
             if self.gen_accum + self.internal_budget >= self.gen_token_num:
                 self.gen_text = ""
         else:
-            sampling_params = {"max_time": budget - self.internal_budget, "temperature": 0.6, "top_p": 0.95}
+            sampling_params = {"temperature": 0.6, "top_p": 0.95}
             if messages != []:
-                self.gen_turn = game_turn
-
-            new_text, token_num, self.planning_stream = self.streaming_generate(self.llm2, self.model2, messages, sampling_params, self.planning_stream)
+                self.gen_turn = game_turn                
+                self.start_planning_stream(self.llm2, self.model2, messages, sampling_params)
+            time.sleep(budget - self.internal_budget)
+            new_text, token_num = self.get_planning_chunks()
             self.gen_text += new_text
             text = self.gen_text
             turn = self.gen_turn
-            if self.planning_stream is None:
+            if self.is_planning_finished():
                 self.gen_text = ""
         return text, token_num, turn
         
         
 import re
-def extract_text(text, default_value=""):
-    """
-    Extracts the text{...} from the input string.
-    Returns the last match found or the default value if no match is found.
-    """
-    matches = re.findall(r'ext{(.*?)}', text, re.DOTALL)
-    if matches:
-        return matches[-1].strip()
-    return text.strip() if text else default_value
-
-
 def extract_boxed(text, default_value=""):
     """
     Extracts the \boxed{...} text from the input string.
@@ -239,7 +282,5 @@ def extract_boxed(text, default_value=""):
             if stack:
                 stack.pop()
             if not stack:
-                if 'ext{' in text[start_index:i]:
-                    return extract_text(text[start_index:i])
                 return text[start_index + 1:i].strip()
     return default_value if default_value else text[start_index + 1:].strip()

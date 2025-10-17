@@ -113,13 +113,15 @@ if __name__ == "__main__":
         log_dir = new_args.log_dir + f'/{setting}'
         for seed in range(args.seed_num):
             for r in range(args.repeat_times):
-                instance.append((log_dir + f'/{r}_{seed}.csv', seed, new_args))
+                if not os.path.exists(log_dir + f'/{r}_{seed}.csv'):
+                    instance.append((log_dir + f'/{r}_{seed}.csv', seed, new_args))
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
-        with open(log_dir + '/args.log', 'w') as f:
-            for arg, value in vars(new_args).items():
-                f.write(f"{arg}: {value}\n")
-            f.write("\n")
+        if not os.path.exists(log_dir + '/args.log'):
+            with open(log_dir + '/args.log', 'w') as f:
+                for arg, value in vars(new_args).items():
+                    f.write(f"{arg}: {value}\n")
+                f.write("\n")
     if args.instance_num is not None:
         assert args.instance_num == len(instance), "instance_num incorrect!"
     with ThreadPoolExecutor(max_workers=len(instance)) as executor:
@@ -139,8 +141,3 @@ if __name__ == "__main__":
                     f.write(f"{key}: {value} ")
                 f.write("\n-----------------------------\n")
             print(f"Progress: {idx}/{total} ({idx/total*100:.2f}%)")
-    with open(f'{log_dir}/args.log', 'a') as f:
-        f.write("\nSummary:\n")
-        for key in results[0].keys():
-            avg_value = sum(result[key] for result in results) / len(results)
-            f.write(f"Average {key}: {avg_value}\n")

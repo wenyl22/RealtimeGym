@@ -39,7 +39,7 @@ class AgileThinker(BaseAgent):
             self.logs['plan'].append(self.plan)
             self.logs['model2_prompt'].append(prompt)
             self.logs['model2_response'].append(text)
-            self.logs['model2_token_num'].append(token_num)
+        self.logs['model2_token_num'].append(token_num)
 
         prompt = self.prompts.FAST_AGENT_PROMPT + observation['model1_description']
         if self.plan is not None:
@@ -47,11 +47,11 @@ class AgileThinker(BaseAgent):
             for line in lines:
                 prompt += f"> {line.strip()}\n"
         messages = [ {"role": "user", "content": prompt} ]
-        text, token_num = self.reactive_inference(messages)
+        text, token_num = self.reactive_inference(messages, self.internal_budget)
         self.action = re.sub(r'[^' + self.prompts.ALL_ACTIONS + ']', '', extract_boxed(text))
         if self.log_thinking:
             self.logs['model1_prompt'].append(prompt)
             self.logs['model1_response'].append(text)
-            self.logs['model1_token_num'].append(token_num)
+        self.logs['model1_token_num'].append(token_num)
 
 

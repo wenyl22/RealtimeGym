@@ -40,6 +40,6 @@ class PlanningAgent(BaseAgent):
             self.logs['plan'].append(self.plan)
             self.logs['model2_prompt'].append(prompt)
             self.logs['model2_response'].append(text)
-            self.logs['model2_token_num'].append(token_num)
+        self.logs['model2_token_num'].append(token_num)
         self.action = self.plan[0] if self.plan != "" else self.prompts.DEFAULT_ACTION
         self.plan = self.plan[1:] if self.plan != "" else ""

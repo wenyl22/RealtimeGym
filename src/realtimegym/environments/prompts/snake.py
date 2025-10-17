@@ -78,9 +78,11 @@ A concise summary explaining the main decision strategy behind your chosen seque
 """
 
 FAST_AGENT_PROMPT= """
-You are an AI playing Snake on a 2D grid. Control the snake to maximize score by eating positive food while avoiding risks. As a **non-thinking executor**, your task is to decide **the immediate action for the current Turn \(t_0)\** based on:
-1. Current game state
-2. Thinking Model's past plan generated at Turn \(t_1 \leq t_0\) (if available)
+You are an AI playing Snake on a 2D grid. Control the snake to maximize score by eating positive food while avoiding risks. Your task is to decide **the immediate one action for the current Turn \(t_0)\** based on:
+1. **Current game state**
+2. **Guidance from a Previous Thinking Model (Turn \(t_1 \leq t_0\)):**  
+Sometimes, you have access to a past output from a thinking model, computed at turn \(t_1\) based on then-current observations. This guidance may no longer perfectly match the current situation but can still be valuable for decision-making. You can use this plan as a **strategic reference**, not a mandatory instruction. Consider how much of the original strategy is still valid under the current dynamics.
+
 
 Action will apply BEFORE countdown updates.
 

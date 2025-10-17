@@ -10,7 +10,7 @@ class ReactiveAgent(BaseAgent):
     def think(self, observation, budget):
         self.state_string = observation['state_string']
         messages = [ {"role": "user", "content": self.prompts.FAST_AGENT_PROMPT + observation['model1_description']} ]
-        text, token_num = self.reactive_inference(messages)
+        text, token_num = self.reactive_inference(messages, budget)
         self.action = re.sub(r'[^' + self.prompts.ALL_ACTIONS + ']', '', extract_boxed(text))
         if self.action == "":
             self.action = self.prompts.DEFAULT_ACTION
@@ -18,4 +18,4 @@ class ReactiveAgent(BaseAgent):
             self.logs['plan'].append("N/A")
             self.logs['model1_prompt'].append(messages[-1]['content'])
             self.logs['model1_response'].append(text)
-            self.logs['model1_token_num'].append(token_num)        
+        self.logs['model1_token_num'].append(token_num)        
