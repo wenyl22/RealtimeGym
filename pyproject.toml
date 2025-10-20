@@ -1,13 +1,14 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
 [project]
-name = "realtimegym"
+name = "realtime-gym"
 version = "0.1.0"
 authors = [
   { name="wenyl", email="wenyl22@mails.tsinghua.edu.cn" },
 ]
-description = "A real-time gym for evaluating language agents."
+description = "A real-time gym for evaluating language agents in dynamic environments with time constraints."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -16,8 +17,50 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "openai>=1.0.0",
+    "transformers>=4.30.0",
+    "pandas>=1.3.0",
+    "numpy>=1.21.0",
+    "pygame>=2.0.0",
+    "Pillow>=9.0.0",
+    "scipy>=1.7.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+]
+
+[project.scripts]
+realtime-gym = "run_game:main"
 
 [project.urls]
 "Homepage" = "https://github.com/wenyl22/RealtimeGym"
 "Bug Tracker" = "https://github.com/wenyl22/RealtimeGym/issues"
+"Documentation" = "https://bleaves.github.io/real-time-reasoning/"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ty.src]
+exclude = [
+    # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
+    # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
+    "src/realtimegym/environments/overcooked_new/**",
+]
+
+# Note: ty does not currently have a rule to disallow implicit Any types
+# All type annotations should be added manually for better type safety
+
+[tool.ruff]
+exclude = [
+    # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
+    # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
+    "src/realtimegym/environments/overcooked_new",
+]

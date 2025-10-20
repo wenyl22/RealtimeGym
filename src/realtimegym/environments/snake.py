@@ -1,12 +1,17 @@
-import numpy as np
-from .base import BaseEnv
 from copy import deepcopy
+
+import numpy as np
+
+from .base import BaseEnv
 from .render.snake_render import SnakeRender
+
 seed_mapping = {
-    'E': {i: 1000 + i for i in range(32)},
-    'M': {i: 5000 + i for i in range(32)},
-    'H': {i: 8000 + i for i in range(32)},
+    "E": {i: 1000 + i for i in range(32)},
+    "M": {i: 5000 + i for i in range(32)},
+    "H": {i: 8000 + i for i in range(32)},
 }
+
+
 def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
     env = SnakeEnv()
     env.set_seed(seed_mapping[cognitive_load][seed])
@@ -16,12 +21,15 @@ def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
         render = SnakeRender()
     return env, seed_mapping[cognitive_load][seed], render
 
+
 class SnakeEnv(BaseEnv):
     def reset(self):
         self.B = 8
         self.true_seed = self.seed % 1000
         self.random = np.random.RandomState(self.true_seed)
-        self.coords = [(x, y) for x in range(1, self.B - 1) for y in range(1, self.B - 1)]
+        self.coords = [
+            (x, y) for x in range(1, self.B - 1) for y in range(1, self.B - 1)
+        ]
         self.snake = [(self.B // 2 - 1, self.B // 2 - 1)]
         self.num_obstacle = self.seed // 1000
         step = self.num_obstacle
@@ -37,22 +45,27 @@ class SnakeEnv(BaseEnv):
         self.random.shuffle(self.coords)
         self.random.shuffle(self.coords)
         if len(self.obstacle) >= self.num_obstacle:
-            self.obstacle = self.obstacle[:self.num_obstacle]
+            self.obstacle = self.obstacle[: self.num_obstacle]
         else:
-            raise ValueError(f"Not enough obstacles generated: {len(self.obstacle)} < {self.num_obstacle}")
+            raise ValueError(
+                f"Not enough obstacles generated: {len(self.obstacle)} < {self.num_obstacle}"
+            )
         self.food = []
         self.food_attributes = [[0 for _ in range(self.B)] for _ in range(self.B)]
 
-        self.dir = 'L'
+        self.dir = "L"
         self.game_turn = 0
         self.reward = 0
         self.terminal = False
+        self._just_reset = False
         # random permute coords
         # random choose 30% of index in range(200) and set self.value to -1
         self.idx = 0
         self.spawn_food()
         self.spawn_food()
         self.spawn_food()
+        # Return initial observation and done flag
+        return self.observe(), self.terminal
 
     def spawn_food(self):
         x, y = self.coords[self.idx]
@@ -62,43 +75,57 @@ class SnakeEnv(BaseEnv):
         life_span = 10
         value = 1
         new_food = (x, y)
-        assert self.food_attributes[x][y] == 0 and new_food not in self.food, \
-            f"Food already exists at {new_food}, attributes: {self.food_attributes[x][y]}, coords: {self.coords}"
+        assert (
+            self.food_attributes[x][y] == 0 and new_food not in self.food
+        ), f"Food already exists at {new_food}, attributes: {self.food_attributes[x][y]}, coords: {self.coords}"
         self.food.append(new_food)
         self.food_attributes[x][y] = (life_span, value)
 
-    def act(self, a):
+    def step(self, a):
+        """Execute action and return (obs, done, reward)."""
+        self._just_reset = False
         self.r = 0
         self.game_turn += 1
-        if (a == 'L' and self.dir == 'R') or \
-            (a == 'R' and self.dir == 'L') or \
-            (a == 'U' and self.dir == 'D') or \
-            (a == 'D' and self.dir == 'U'):
-                a = self.dir # prevent reverse direction
-#                raise ValueError(f"Invalid action a = {a}, dir = {self.dir}")
-        if a in ['L', 'R', 'U', 'D']: # ignore invalid actions
+        if (
+            (a == "L" and self.dir == "R")
+            or (a == "R" and self.dir == "L")
+            or (a == "U" and self.dir == "D")
+            or (a == "D" and self.dir == "U")
+        ):
+            a = self.dir  # prevent reverse direction
+        #                raise ValueError(f"Invalid action a = {a}, dir = {self.dir}")
+        if a in ["L", "R", "U", "D"]:  # ignore invalid actions
             self.dir = a
         head_x, head_y = self.snake[-1]
-        if self.dir == 'L':
+        if self.dir == "L":
             new_head = (head_x - 1, head_y)
-        elif self.dir == 'R':
+        elif self.dir == "R":
             new_head = (head_x + 1, head_y)
-        elif self.dir == 'D':
+        elif self.dir == "D":
             new_head = (head_x, head_y - 1)
-        elif self.dir == 'U':
+        elif self.dir == "U":
             new_head = (head_x, head_y + 1)
         else:
-            raise ValueError(f"Invalid action a = {a}, dir = {self.dir}")     
+            raise ValueError(f"Invalid action a = {a}, dir = {self.dir}")
         x, y = new_head
         # Death trigger: hit body; hit wall; head hits newly grown tail
-        if new_head in self.snake[1:] or new_head in self.obstacle or \
-        new_head[0] == 0 or new_head[1] == 0 or \
-        new_head[0] == self.B - 1 or new_head[1] == self.B - 1 or \
-        (new_head == self.snake[0] and new_head in self.food and self.food_attributes[x][y][1] > 0):
+        if (
+            new_head in self.snake[1:]
+            or new_head in self.obstacle
+            or new_head[0] == 0
+            or new_head[1] == 0
+            or new_head[0] == self.B - 1
+            or new_head[1] == self.B - 1
+            or (
+                new_head == self.snake[0]
+                and new_head in self.food
+                and self.food_attributes[x][y][1] > 0
+            )
+        ):
             self.r -= 1
             self.reward += self.r
             self.terminal = True
-            return self.reward, False
+            return self.observe(), self.terminal, self.reward
         self.snake.append(new_head)
 
         if new_head in self.food:
@@ -112,82 +139,98 @@ class SnakeEnv(BaseEnv):
 
         for food in self.food:
             x, y = food
-            l, v = self.food_attributes[x][y]
-            self.food_attributes[x][y] = (l - 1, v)
-            if l <= 1:
+            lifespan, value = self.food_attributes[x][y]
+            self.food_attributes[x][y] = (lifespan - 1, value)
+            if lifespan <= 1:
                 self.food.remove(food)
                 self.food_attributes[x][y] = 0
         if self.game_turn % 3 == 1:
             self.spawn_food()
         self.reward += self.r
         self.terminal = True if self.game_turn >= 100 else False
-        return self.reward, False
+        return self.observe(), self.terminal, self.reward
+
+    def act(self, a):
+        """Legacy method for backward compatibility."""
+        obs, done, reward = self.step(a)
+        reset_flag = self._just_reset
+        self._just_reset = False
+        return reward, reset_flag
 
     def state_string(self):
         grid_string = ""
-        l = len(self.snake)
+        snake_length = len(self.snake)
         for i in range(self.B):
             for j in range(self.B):
                 output = ""
                 x, y = j, self.B - 1 - i
                 if (x, y) in self.obstacle:
-                    output += '#'
+                    output += "#"
                 if (x, y) in self.snake:
-                    output += chr(ord('a') + l - 1 - self.snake.index((x, y)))
+                    output += chr(
+                        ord("a") + snake_length - 1 - self.snake.index((x, y))
+                    )
                 if (x, y) in self.food:
                     if self.food_attributes[x][y][1] > 0:
-                        output += '+'
+                        output += "+"
                     else:
-                        output += '-'
+                        output += "-"
                     output += str(self.food_attributes[x][y][0])
                 if x == 0 or x == self.B - 1 or y == 0 or y == self.B - 1:
-                    output += '#'
+                    output += "#"
                 if output == "":
-                    output = '.'
-                grid_string += output + ' ' * (6 - len(output))
-            grid_string += '\n'
+                    output = "."
+                grid_string += output + " " * (6 - len(output))
+            grid_string += "\n"
         return grid_string
 
     def get_possible_actions(self):
         # return 'L', 'R', 'U', 'D' removing the reverse of the current direction
-        if self.dir == 'L':
-            actions = ['L', 'U', 'D']
-        elif self.dir == 'R':
-            actions = ['R', 'U', 'D']
-        elif self.dir == 'U':
-            actions = ['L', 'R', 'U']
-        elif self.dir == 'D':
-            actions = ['L', 'R', 'D']
+        if self.dir == "L":
+            actions = ["L", "U", "D"]
+        elif self.dir == "R":
+            actions = ["R", "U", "D"]
+        elif self.dir == "U":
+            actions = ["L", "R", "U"]
+        elif self.dir == "D":
+            actions = ["L", "R", "D"]
         return actions
+
     def llm_state_builder(self):
         snake = deepcopy(self.snake[::-1])
         foods = []
-        for (x, y) in self.food:
-            l, v = self.food_attributes[x][y]
-            foods.append((x, y, l, v))
+        for x, y in self.food:
+            lifespan, value = self.food_attributes[x][y]
+            foods.append((x, y, lifespan, value))
         return {
             "snake_dir": self.dir,
             "internal_obstacles": self.obstacle,
             "foods": foods,
             "snake": snake,
-            "size": self.B
+            "size": self.B,
         }
+
     def observe(self):
         state_for_llm = self.llm_state_builder()
-        description = f"**Cells occupied by walls**:\n"
+        description = "**Cells occupied by walls**:\n"
         description += f"\t - Border Cells: x=0/x={state_for_llm['size'] - 1} or y=0/y={state_for_llm['size'] - 1}.\n"
         description += f"\t - Internal Obstacles: {state_for_llm['internal_obstacles'] if len(state_for_llm['internal_obstacles']) > 0 else 'No internal obstacles'}\n"
         description += f"**Snake Positions**:{state_for_llm['snake']}\n**Snake Head Direction**: {state_for_llm['snake_dir']}\n"
-        description += f"**Food Positions, Life Span and Value**:\n"
-        for (x, y, life_span, value) in state_for_llm['foods']:
+        description += "**Food Positions, Life Span and Value**:\n"
+        for x, y, life_span, value in state_for_llm["foods"]:
             description += f"\t- ({x}, {y}, {life_span}, {value})\n"
-        model1_description = f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
-        model2_description = f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+        model1_description = (
+            f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
+        )
+        model2_description = (
+            f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+        )
         return {
             "model1_description": model1_description,
             "model2_description": model2_description,
             "game_turn": self.game_turn,
             "state_string": self.state_string(),
         }
+
     def summary(self):
         print(f"Seed {self.seed} - {self.game_turn} turns, reward: {self.reward}")
