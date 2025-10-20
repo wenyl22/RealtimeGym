@@ -24,6 +24,11 @@ dependencies = [
     "pygame>=2.0.0",
     "Pillow>=9.0.0",
     "scipy>=1.7.0",
+    "gym>=0.26.0",
+    "tqdm>=4.65.0",
+    "ipython>=7.0.0",
+    "ipywidgets>=7.6.0",
+    "imageio>=2.9.0",
 ]
 
 [project.optional-dependencies]
@@ -64,4 +69,22 @@ exclude = [
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
     "src/realtimegym/environments/overcooked_new",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src/realtimegym",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
 ]
