@@ -75,9 +75,9 @@ class SnakeEnv(BaseEnv):
         life_span = 10
         value = 1
         new_food = (x, y)
-        assert (
-            self.food_attributes[x][y] == 0 and new_food not in self.food
-        ), f"Food already exists at {new_food}, attributes: {self.food_attributes[x][y]}, coords: {self.coords}"
+        assert self.food_attributes[x][y] == 0 and new_food not in self.food, (
+            f"Food already exists at {new_food}, attributes: {self.food_attributes[x][y]}, coords: {self.coords}"
+        )
         self.food.append(new_food)
         self.food_attributes[x][y] = (life_span, value)
 

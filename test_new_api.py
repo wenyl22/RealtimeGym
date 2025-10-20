@@ -120,9 +120,9 @@ for env_id in ["Freeway-v0", "Snake-v0", "Overcooked-v0"]:
     obs, done, reward = env.step("S")
     assert isinstance(obs, dict), f"{env_id}: step should return dict observation"
     assert isinstance(done, bool), f"{env_id}: step should return bool done"
-    assert isinstance(
-        reward, (int, float)
-    ), f"{env_id}: step should return numeric reward"
+    assert isinstance(reward, (int, float)), (
+        f"{env_id}: step should return numeric reward"
+    )
 
     print(f"✓ {env_id:20s} - API working correctly")
 
