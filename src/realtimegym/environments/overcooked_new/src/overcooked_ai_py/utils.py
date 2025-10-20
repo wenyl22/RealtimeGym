@@ -136,7 +136,7 @@ def merge_dictionaries(dictionaries):
 def rm_idx_from_dict(d, idx):
     """
     Takes in a dictionary with lists as values, and returns
-    a dictionary with lists as values, but containing 
+    a dictionary with lists as values, but containing
     only the desired index
 
     NOTE: this is a MUTATING METHOD, returns the POPPED IDX
@@ -151,7 +151,7 @@ def take_indexes_from_dict(d, indices, keys_to_ignore=[]):
     """
     Takes in a dictionary with lists as values, and returns
     a dictionary with lists as values, but with subsampled indices
-    based on the `indices` input 
+    based on the `indices` input
     """
     assert all(isinstance(v, Iterable) for v in d.values())
     new_d = {}

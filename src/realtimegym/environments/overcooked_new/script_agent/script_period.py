@@ -5,7 +5,7 @@ import random
 
 class Pickup_Object(BaseScriptPeriod):
     def __init__(self, obj, terrain_type="XPOTDS", random_put=True, random_pos=True):
-        """Pickup some object at specific terrains 
+        """Pickup some object at specific terrains
         obj: str
             "onion", "tomato" "dish", "soup"
         terrain_type: str
@@ -13,7 +13,7 @@ class Pickup_Object(BaseScriptPeriod):
         random_put: bool
             if True, put the irrelevant obj at random position
         random_pos: bool
-            if True, find a random obj, otherwise the closest one 
+            if True, find a random obj, otherwise the closest one
         """
         super().__init__(("random_" if random_pos else "") + "pickup_" + str(obj))
 
@@ -29,12 +29,12 @@ class Pickup_Object(BaseScriptPeriod):
 
         if type(self.target_obj) != list:
             self.target_obj = [self.target_obj]
-    
+
     def reset(self, mdp, state, player_idx):
         self.__put_pos = None
         self.__obj_pos = None
         self.__random_pos = None
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -42,7 +42,7 @@ class Pickup_Object(BaseScriptPeriod):
              # not target obj, place in random position
             action, self.__put_pos = utils.interact(mdp, state, player_idx, pre_goal = self.__put_pos, random=self.random_put, terrain_type="XOPDS", obj=["can_put"], random_state=self.random)
             return action
-        
+
         if not player.has_object():
             # find target obj
             action, self.__obj_pos = utils.interact(mdp, state, player_idx, pre_goal = self.__obj_pos, random=self.random_pos, terrain_type=self.terrain_type, obj=self.target_obj, random_state=self.random)
@@ -50,14 +50,14 @@ class Pickup_Object(BaseScriptPeriod):
 
         action, self.__random_pos = utils.random_move(mdp, state, player_idx, pre_goal = self.__random_pos, random_state=self.random)
         return action
-    
+
     def done(self, mdp, state, player_idx):
         player = state.players[player_idx]
         return player.has_object() and player.get_object().name in self.target_obj
 
 class Put_Object(BaseScriptPeriod):
     def __init__(self, terrain_type="XPTODS", random_put=True, obj="can_put", pos_mask=None, move_mask=None):
-        """Pickup some object at specific terrains 
+        """Pickup some object at specific terrains
         terrain_type: str
             example "XPTODS"
         random_put: bool
@@ -73,11 +73,11 @@ class Put_Object(BaseScriptPeriod):
         self.terrain_type = terrain_type
         self.pos_mask = pos_mask
         self.move_mask = move_mask
-    
+
     def reset(self, mdp, state, player_idx):
         self.__put_pos = None
         self.__random_pos = None
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -88,7 +88,7 @@ class Put_Object(BaseScriptPeriod):
 
         action, self.__random_pos = utils.random_move(mdp, state, player_idx, pre_goal = self.__random_pos, move_mask=self.move_mask, random_state=self.random)
         return action
-    
+
     def done(self, mdp, state, player_idx):
         player = state.players[player_idx]
         return not player.has_object()
@@ -97,7 +97,7 @@ class Pickup_Ingredient_and_Place_in_Pot(BaseScriptPeriod):
     def __init__(self, random_put=True, random_pot=True, random_ingredient=True, obj=["tomato", "onion"]):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_pot: bool
             if True, find a random pot to place
         random_ingredient: bool
@@ -105,7 +105,7 @@ class Pickup_Ingredient_and_Place_in_Pot(BaseScriptPeriod):
         """
         super().__init__(period_name="Pickup_Ingredient_and_Place_in_Pot")
 
-        
+
         self.random_put = random_put
         self.random_pot = random_pot
         self.random_ingredient = random_ingredient
@@ -113,11 +113,11 @@ class Pickup_Ingredient_and_Place_in_Pot(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -146,7 +146,7 @@ class Pickup_Ingredient_and_Place_Mix(BaseScriptPeriod):
     def __init__(self, random_put=True, random_pot=True, random_ingredient=True, obj=["tomato", "onion"]):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_pot: bool
             if True, find a random pot to place
         random_ingredient: bool
@@ -154,7 +154,7 @@ class Pickup_Ingredient_and_Place_Mix(BaseScriptPeriod):
         """
         super().__init__(period_name="Pickup_Ingredient_and_Place_in_Pot")
 
-        
+
         self.random = np.random.RandomState(42)
         self.random_put = random_put
         self.random_pot = random_pot
@@ -165,11 +165,11 @@ class Pickup_Ingredient_and_Place_Mix(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.random.choice(self.target_obj), terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.random.choice(self.target_obj), terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -222,7 +222,7 @@ class Mixed_Order(BaseScriptPeriod):
     def __init__(self, random_put=True, random_pot=True, random_ingredient=True, obj=["tomato", "onion"]):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_pot: bool
             if True, find a random pot to place
         random_ingredient: bool
@@ -240,11 +240,11 @@ class Mixed_Order(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.random.choice(self.target_obj), terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.random.choice(self.target_obj), terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -295,24 +295,24 @@ class Pickup_Ingredient_and_Place_Random(BaseScriptPeriod):
     def __init__(self, random_put=True, random_ingredient=True, obj=["onion", "tomato"]):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_ingredient: bool
             if True, take a random onion
         """
         super().__init__(period_name="Pickup_Ingredient_and_Place_Random")
 
-        
+
         self.random_put = random_put
         self.random_ingredient = random_ingredient
         self.target_obj = obj if type(obj) == list else [obj]
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OTX", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -341,24 +341,24 @@ class Put_Ingredient_Everywhere(BaseScriptPeriod):
     def __init__(self, random_put=True, random_ingredient=True, obj=["onion", "tomato"]):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_ingredient: bool
             if True, take a random onion
         """
         super().__init__(period_name="Put_Ingredient_Everywhere")
 
-        
+
         self.random_put = random_put
         self.random_ingredient = random_ingredient
         self.target_obj = obj if type(obj) == list else [obj]
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OT", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj=self.target_obj, terrain_type="OT", random_put=self.random_put, random_pos=self.random_ingredient)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -387,23 +387,23 @@ class Pickup_Dish_and_Place_Random(BaseScriptPeriod):
     def __init__(self, random_put=True, random_dish=True):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_dish: bool
             if True, take a random dish
         """
         super().__init__(period_name="Pickup_Dish_and_Place_Random")
 
-        
+
         self.random_put = random_put
         self.random_dish = random_dish
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj="dish", terrain_type="XOPDST", random_put=self.random_put, random_pos=self.random_dish)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj="dish", terrain_type="XOPDTS", random_put=self.random_put, random_pos=self.random_dish)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -423,23 +423,23 @@ class Put_Dish_Everywhere(BaseScriptPeriod):
     def __init__(self, random_put=True, random_dish=True):
         """
         random_put: bool
-            if True, place the object to random position when the player starts with 
+            if True, place the object to random position when the player starts with
         random_dish: bool
             if True, take a random dish
         """
         super().__init__(period_name="Put_Dish_Everywhere")
 
-        
+
         self.random_put = random_put
         self.random_dish = random_dish
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj="dish", terrain_type="D", random_put=self.random_put, random_pos=self.random_dish)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Object(obj="dish", terrain_type="D", random_put=self.random_put, random_pos=self.random_dish)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -465,7 +465,7 @@ class Pickup_Soup(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Object(obj="dish", terrain_type="XOTPDS", random_put=True, random_pos=self.random_dish)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         if utils.exists(mdp, state, player_idx, terrain_type="X", obj="soup"):
@@ -473,7 +473,7 @@ class Pickup_Soup(BaseScriptPeriod):
             self.__current_period = Pickup_Object(obj="soup", terrain_type="XP", random_put=True, random_pos=self.random_soup)
         else:
             self.__current_period = Pickup_Object(obj="dish", terrain_type="XOTPDS", random_put=True, random_pos=self.random_dish)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -490,7 +490,7 @@ class Pickup_Soup(BaseScriptPeriod):
     def done(self, mdp, state, player_idx):
         player = state.players[player_idx]
         return player.has_object() and player.get_object().name == "soup"
-    
+
 class Pickup_Soup_and_Deliver(BaseScriptPeriod):
     def __init__(self, random_dish=True, random_soup=True):
         super().__init__(period_name="Pickup_Soup_and_Deliver")
@@ -500,11 +500,11 @@ class Pickup_Soup_and_Deliver(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Soup(random_dish=self.random_dish, random_soup=self.random_soup)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Soup(random_dish=self.random_dish, random_soup=self.random_soup)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -531,11 +531,11 @@ class Pickup_Soup_and_Place_Random(BaseScriptPeriod):
 
         self.__stage = 1
         self.__current_period = Pickup_Soup(random_dish=self.random_dish, random_soup=self.random_soup)
-    
+
     def reset(self, mdp, state, player_idx):
         self.__stage = 1
         self.__current_period = Pickup_Soup(random_dish=self.random_dish, random_soup=self.random_soup)
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
 
@@ -571,4 +571,3 @@ SCRIPT_PERIODS_CLASSES={
     "pickup_ingredient_and_place_mix": Pickup_Ingredient_and_Place_Mix,
     "mixed_order": Mixed_Order,
 }
-

@@ -31,7 +31,7 @@ NO_COUNTERS_START_OR_PARAMS = {
 
 
 class MotionPlanner(object):
-    """A planner that computes optimal plans for a single agent to 
+    """A planner that computes optimal plans for a single agent to
     arrive at goal positions and orientations in an OvercookedGridworld.
 
     Args:
@@ -43,7 +43,7 @@ class MotionPlanner(object):
     def __init__(self, mdp, counter_goals=[]):
         self.mdp = mdp
 
-        # If positions facing counters should be 
+        # If positions facing counters should be
         # allowed as motion goals
         self.counter_goals = counter_goals
 
@@ -103,7 +103,7 @@ class MotionPlanner(object):
         """
         Returns pre-computed plan from initial agent position
         and orientation to a goal position and orientation.
-        
+
         Args:
             start_pos_and_or (tuple): starting (pos, or) tuple
             goal_pos_and_or (tuple): goal (pos, or) tuple
@@ -111,7 +111,7 @@ class MotionPlanner(object):
         plan_key = (start_pos_and_or, goal_pos_and_or)
         action_plan, pos_and_or_path, plan_cost = self.all_plans[plan_key]
         return action_plan, pos_and_or_path, plan_cost
-    
+
     def get_gridworld_distance(self, start_pos_and_or, goal_pos_and_or):
         """Number of actions necessary to go from starting position
         and orientations to goal position and orientation (not including
@@ -123,8 +123,8 @@ class MotionPlanner(object):
         return plan_cost - 1
 
     def get_gridworld_pos_distance(self, pos1, pos2):
-        """Minimum (over possible orientations) number of actions necessary 
-        to go from starting position to goal position (not including 
+        """Minimum (over possible orientations) number of actions necessary
+        to go from starting position to goal position (not including
         interaction action)."""
         # NOTE: currently unused, pretty bad code. If used in future, clean up
         min_cost = np.Inf
@@ -159,7 +159,7 @@ class MotionPlanner(object):
         return True
 
     def is_valid_motion_goal(self, goal_pos_and_or):
-        """Checks that desired single-agent goal state (position and orientation) 
+        """Checks that desired single-agent goal state (position and orientation)
         is reachable and is facing a terrain feature"""
         goal_position, goal_orientation = goal_pos_and_or
         if goal_position not in self.mdp.get_valid_player_positions():
@@ -174,7 +174,7 @@ class MotionPlanner(object):
 
     def _compute_plan(self, start_motion_state, goal_motion_state):
         """Computes optimal action plan for single agent movement
-        
+
         Args:
             start_motion_state (tuple): starting positions and orientations
             goal_motion_state (tuple): goal positions and orientations
@@ -198,7 +198,7 @@ class MotionPlanner(object):
         """
         Recovers an action plan reaches the goal motion position and orientation, and executes
         and interact action.
-        
+
         Args:
             position_list (list): list of positions to be reached after the starting position
                                   (does not include starting position, but includes ending position)
@@ -223,7 +223,7 @@ class MotionPlanner(object):
             curr_or = action if action != Action.STAY else curr_or
             pos_and_or_path.append((next_pos, curr_or))
             curr_pos = next_pos
-        
+
         # Fix agent orientation if necessary
         if curr_or != goal_orientation:
             new_pos, _ = self.mdp._move_if_direction(curr_pos, curr_or, goal_orientation)
@@ -266,7 +266,7 @@ class MotionPlanner(object):
 
     def min_cost_between_features(self, pos_list1, pos_list2, manhattan_if_fail=False):
         """
-        Determines the minimum number of timesteps necessary for a player to go from any 
+        Determines the minimum number of timesteps necessary for a player to go from any
         terrain feature in list1 to any feature in list2 and perform an interact action
         """
         min_dist = np.Inf
@@ -283,7 +283,7 @@ class MotionPlanner(object):
                 curr_dist = self.get_gridworld_distance(mg1, mg2)
                 if curr_dist < min_dist:
                     min_dist = curr_dist
-                
+
         # +1 to account for interaction action
         if manhattan_if_fail and min_dist == np.Inf:
             min_dist = min_manhattan
@@ -338,7 +338,7 @@ class MotionPlanner(object):
 
 
 class JointMotionPlanner(object):
-    """A planner that computes optimal plans for a two agents to 
+    """A planner that computes optimal plans for a two agents to
     arrive at goal positions and orientations in a OvercookedGridworld.
 
     Args:
@@ -349,7 +349,7 @@ class JointMotionPlanner(object):
         self.mdp = mdp
 
         # Whether starting orientations should be accounted for
-        # when solving all motion problems 
+        # when solving all motion problems
         # (increases number of plans by a factor of 4)
         # but removes additional fudge factor <= 1 for each
         # joint motion plan
@@ -358,11 +358,11 @@ class JointMotionPlanner(object):
 
         # Enable both agents to have the same motion goal
         self.same_motion_goals = params["same_motion_goals"]
-        
+
         # Single agent motion planner
         self.motion_planner = MotionPlanner(mdp, counter_goals=params["counter_goals"])
 
-        # Graph problem that returns optimal paths from 
+        # Graph problem that returns optimal paths from
         # starting positions to goal positions (without
         # accounting for orientations)
         self.joint_graph_problem = self._joint_graph_from_grid()
@@ -372,15 +372,15 @@ class JointMotionPlanner(object):
         """
         Returns pre-computed plan from initial joint motion state
         to a goal joint motion state.
-        
+
         Args:
             start_jm_state (tuple): starting pos & orients ((pos1, or1), (pos2, or2))
             goal_jm_state (tuple): goal pos & orients ((pos1, or1), (pos2, or2))
-        
+
         Returns:
             joint_action_plan (list): joint actions to be executed to reach end_jm_state
             end_jm_state (tuple): the pair of (pos, or) tuples corresponding
-                to the ending timestep (this will usually be different from 
+                to the ending timestep (this will usually be different from
                 goal_jm_state, as one agent will end before other).
             plan_lengths (tuple): lengths for each agent's plan
         """
@@ -393,9 +393,9 @@ class JointMotionPlanner(object):
             starting_positions = tuple(player_pos_and_or[0] for player_pos_and_or in start_jm_state)
             goal_positions = tuple(player_pos_and_or[0] for player_pos_and_or in goal_jm_state)
             # If beginning positions are equal to end positions, the pre-stored
-            # plan (not dependent on initial positions) will likely return a 
+            # plan (not dependent on initial positions) will likely return a
             # wrong answer, so we compute it from scratch.
-            # 
+            #
             # This is because we only compute plans with starting orientations
             # (North, North), so if one of the two agents starts at location X
             # with orientation East it's goal is to get to location X with
@@ -463,7 +463,7 @@ class JointMotionPlanner(object):
         """Either use motion planner or actually compute a joint plan"""
         # Try using MotionPlanner plans and join them together
         action_plans, pos_and_or_paths, plan_lengths = self._get_plans_from_single_planner(joint_start_state, joint_goal_state)
-        
+
         # Check if individual plans conflict
         have_conflict = self.plans_have_conflict(joint_start_state, joint_goal_state, pos_and_or_paths, plan_lengths)
 
@@ -473,7 +473,7 @@ class JointMotionPlanner(object):
                 joint_start_state, action_plans, pos_and_or_paths, min(plan_lengths)
             )
             return joint_action_plan, end_pos_and_orientations, plan_lengths
-        
+
         # If there is a conflict in the single motion plan and the agents have the same goal,
         # the graph problem can't be used either as it can't handle same goal state: we compute
         # manually what the best way to handle the conflict is
@@ -520,8 +520,8 @@ class JointMotionPlanner(object):
         return joint_action_plan, end_joint_state
 
     def _handle_path_conflict_with_same_goal(self, joint_start_state, joint_goal_state, action_plans, pos_and_or_paths):
-        """Assumes that optimal path in case two agents have the same goal and their paths conflict 
-        is for one of the agents to wait. Checks resulting plans if either agent waits, and selects the 
+        """Assumes that optimal path in case two agents have the same goal and their paths conflict
+        is for one of the agents to wait. Checks resulting plans if either agent waits, and selects the
         shortest cost among the two."""
 
         joint_plan0, end_pos_and_or0, plan_lengths0 = self._handle_conflict_with_same_goal_idx(
@@ -542,7 +542,7 @@ class JointMotionPlanner(object):
         """
         Determines what is the best joint plan if whenether there is a conflict between the two agents' actions,
         the agent with index `wait_agent_idx` waits one turn.
-        
+
         If the agent that is assigned to wait is "in front" of the non-waiting agent, this could result
         in an endless conflict. In this case, we return infinite finishing times.
         """
@@ -554,7 +554,7 @@ class JointMotionPlanner(object):
 
         joint_plan = []
         # While either agent hasn't finished their plan
-        while idx0 != len(agent0_plan_original) and idx1 != len(agent1_plan_original): 
+        while idx0 != len(agent0_plan_original) and idx1 != len(agent1_plan_original):
             next_pos_or0, next_pos_or1 = pos_and_or_paths[0][idx0], pos_and_or_paths[1][idx1]
             next_positions = (next_pos_or0[0], next_pos_or1[0])
 
@@ -573,21 +573,21 @@ class JointMotionPlanner(object):
                     idx0 += 1
 
                 curr_positions = (curr_pos_or0[0], curr_pos_or1[0])
-                
+
                 # If one agent waiting causes other to crash into it, return None
                 if self._agents_are_in_same_position((curr_pos_or0, curr_pos_or1)):
                     return None, None, [np.Inf, np.Inf]
-                
+
             else:
                 curr_pos_or0, curr_pos_or1 = next_pos_or0, next_pos_or1
                 curr_positions = next_positions
                 curr_joint_action = [agent0_plan_original[idx0], agent1_plan_original[idx1]]
                 idx0 += 1
                 idx1 += 1
-                
+
             joint_plan.append(curr_joint_action)
             prev_positions = curr_positions
-        
+
         assert idx0 != idx1, "No conflict found"
 
         end_pos_and_or = (curr_pos_or0, curr_pos_or1)
@@ -615,9 +615,9 @@ class JointMotionPlanner(object):
         return len(agent_positions) != len(set(agent_positions))
 
     def _compute_plan_from_joint_graph(self, joint_start_state, joint_goal_state):
-        """Compute joint action plan for two agents to achieve a 
+        """Compute joint action plan for two agents to achieve a
         certain position and orientation with the joint motion graph
-        
+
         Args:
             joint_start_state: pair of start (pos, or)
             joint_goal_state: pair of goal (pos, or)
@@ -718,7 +718,7 @@ class JointMotionPlanner(object):
         NOTE: this DOES NOT include joint positions with superimposed agents."""
         successor_joint_positions = {}
         joint_motion_actions = itertools.product(Action.MOTION_ACTIONS, Action.MOTION_ACTIONS)
-        
+
         # Under assumption that orientation doesn't matter
         dummy_orientation = Direction.NORTH
         dummy_player_states = [PlayerState(pos, dummy_orientation) for pos in starting_positions]
@@ -742,7 +742,7 @@ class JointMotionPlanner(object):
             position, orientation = end_pos_and_or
             new_player.update_pos_and_or(position, orientation)
             end_players.append(new_player)
-        
+
         end_state.players = tuple(end_players)
 
         # Resolve environment effects for t - 1 turns
@@ -763,9 +763,9 @@ class JointMotionPlanner(object):
 
 class MediumLevelActionManager(object):
     """
-    Manager for medium level actions (specific joint motion goals). 
+    Manager for medium level actions (specific joint motion goals).
     Determines available medium level actions for each state.
-    
+
     Args:
         mdp (OvercookedGridWorld): gridworld of interest
         mlam_params (dictionary): parameters for the medium level action manager
@@ -773,12 +773,12 @@ class MediumLevelActionManager(object):
 
     def __init__(self, mdp, mlam_params):
         self.mdp = mdp
-        
+
         self.params = mlam_params
         self.wait_allowed = mlam_params['wait_allowed']
         self.counter_drop = mlam_params["counter_drop"]
         self.counter_pickup = mlam_params["counter_pickup"]
-        
+
         self.joint_motion_planner = JointMotionPlanner(mdp, mlam_params)
         self.motion_planner = self.joint_motion_planner.motion_planner
 
@@ -832,7 +832,7 @@ class MediumLevelActionManager(object):
         """Determine all possible joint medium level actions for a certain state"""
         agent1_actions, agent2_actions = tuple(self.get_medium_level_actions(state, player) for player in state.players)
         joint_ml_actions = list(itertools.product(agent1_actions, agent2_actions))
-        
+
         # ml actions are nothing but specific joint motion goals
         valid_joint_ml_actions = list(filter(lambda a: self.is_valid_ml_action(state, a), joint_ml_actions))
 
@@ -853,13 +853,13 @@ class MediumLevelActionManager(object):
     def get_medium_level_actions(self, state, player, waiting_substitute=False):
         """
         Determine valid medium level actions for a player.
-        
+
         Args:
             state (OvercookedState): current state
             player (PlayerState): the player's current state
-            waiting_substitute (bool): add a substitute action that takes the place of 
+            waiting_substitute (bool): add a substitute action that takes the place of
                                        a waiting action (going to closest feature)
-        
+
         Returns:
             player_actions (list): possible motion goals (pairs of goal positions and orientations)
         """
@@ -906,7 +906,7 @@ class MediumLevelActionManager(object):
             # are not considered valid
             player_actions.extend(self.go_to_closest_feature_actions(player))
 
-        is_valid_goal_given_start = lambda goal: self.motion_planner.is_valid_motion_start_goal_pair(player.pos_and_or, goal)    
+        is_valid_goal_given_start = lambda goal: self.motion_planner.is_valid_motion_start_goal_pair(player.pos_and_or, goal)
         player_actions = list(filter(is_valid_goal_given_start, player_actions))
         return player_actions
 
@@ -958,7 +958,7 @@ class MediumLevelActionManager(object):
         fillable_pots = partially_full_onion_pots + pot_states_dict['empty']
         return self._get_ml_actions_for_positions(fillable_pots)
 
-    
+
     def pickup_soup_with_dish_actions(self, pot_states_dict, only_nearly_ready=False):
         ready_pot_locations = pot_states_dict['ready']
         nearly_ready_pot_locations = pot_states_dict['cooking']
@@ -989,7 +989,7 @@ class MediumLevelActionManager(object):
 
     def _get_ml_actions_for_positions(self, positions_list):
         """Determine what are the ml actions (joint motion goals) for a list of positions
-        
+
         Args:
             positions_list (list): list of target terrain feature positions
         """
@@ -1717,5 +1717,3 @@ class MediumLevelActionManager(object):
 #             print(heuristic_cost, (pot_to_delivery_costs, dish_to_pot_costs, num_pot_to_delivery, items_to_pot_cost))
 #             print(self.mdp.state_string(state))
 #         return heuristic_cost
-
-

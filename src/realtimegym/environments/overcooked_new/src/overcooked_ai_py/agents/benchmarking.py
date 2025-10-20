@@ -169,7 +169,7 @@ class AgentEvaluator(object):
         assert traj_keys_set == set(default_traj_keys), "Keys of traj dict did not match standard form.\nMissing keys: {}\nAdditional keys: {}".format(
             [k for k in default_traj_keys if k not in traj_keys_set], [k for k in traj_keys_set if k not in default_traj_keys]
         )
-    
+
     @staticmethod
     def _check_right_types(trajectories):
         for idx in range(len(trajectories["ep_states"])):
@@ -315,7 +315,7 @@ class AgentEvaluator(object):
     @staticmethod
     def add_metadata_to_traj(trajs, metadata_fn, input_keys):
         """
-        Add an additional metadata entry to the trajectory, based on manipulating 
+        Add an additional metadata entry to the trajectory, based on manipulating
         the trajectory `input_keys` values
         """
         metadata_fn_input = [trajs[k] for k in input_keys]
@@ -336,7 +336,7 @@ class AgentEvaluator(object):
         return AgentEvaluator.add_metadata_to_traj(trajs, metadata_fn, ["ep_states"])
 
     # EVENTS VISUALIZATION METHODS #
-    
+
     @staticmethod
     def events_visualization(trajs, traj_index):
         # TODO

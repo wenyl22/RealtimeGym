@@ -127,7 +127,7 @@ def bfs(mdp, state, player_idx, move_mask=None):
                     q.append((x1, y1))
                     Tail += 1
     return dist, path
-    
+
 
 def interact(mdp, state, player_idx, pre_goal, random, terrain_type, obj, pos_mask=None, move_mask=None, random_state=None):
     """
@@ -142,7 +142,7 @@ def interact(mdp, state, player_idx, pre_goal, random, terrain_type, obj, pos_ma
 
     if pos_mask is not None:
         valid_map = valid_map * pos_mask
-    
+
     dist, path = bfs(mdp, state, player_idx, move_mask=move_mask)
 
     # print("requirement: ", terrain_type, obj)
@@ -180,13 +180,13 @@ def interact(mdp, state, player_idx, pre_goal, random, terrain_type, obj, pos_ma
             for x, y in candidates:
                 if goal is None or dist[y, x] < dist[goal[1], goal[0]]:
                     goal = (x, y)
-    
+
     # print("goal", goal)
 
     if i_pos[1] == goal[1] and i_pos[0] == goal[0] and mdp.get_terrain_type_at_pos(goal) in terrain_type and valid_map[goal[1], goal[0]]:
         # print("INTERACT at goal")
         return Action.INTERACT, goal
-    
+
     x, y = goal
     action = random_state.choice(range(len(Direction.ALL_DIRECTIONS)))
     action = Direction.ALL_DIRECTIONS[action]
@@ -206,7 +206,7 @@ def random_move(mdp, state, player_idx, pre_goal, move_mask=None, random_state= 
     player = state.players[player_idx]
     pos, o = player.position, player.orientation
     i_pos = Action.move_in_direction(pos, o)
-    
+
     dist, path = bfs(mdp, state, player_idx, move_mask=move_mask)
 
     goal = None
@@ -220,7 +220,7 @@ def random_move(mdp, state, player_idx, pre_goal, move_mask=None, random_state= 
         candidates = [(x, y) for x, y in candidates if dist[y, x] != -1 and (move_mask is None or move_mask[y, x] == 1)]
         goal = random_state.choice(range(len(candidates)))
         goal = candidates[goal]
-    
+
     x, y = goal
     action = random_state.choice(range(len(Direction.ALL_DIRECTIONS)))
     action = Direction.ALL_DIRECTIONS[action]
@@ -240,13 +240,13 @@ def random_move(mdp, state, player_idx, pre_goal, move_mask=None, random_state= 
 
 
 def exists(mdp, state, player_idx, terrain_type, obj):
-    
+
     player = state.players[player_idx]
     pos, o = player.position, player.orientation
     i_pos = Action.move_in_direction(pos, o)
 
     valid_map = compute_valid_map(mdp, state, player_idx, terrain_type, obj)
-    
+
     dist, path = bfs(mdp, state, player_idx)
 
     # print("valid_map\n", valid_map)
@@ -257,5 +257,5 @@ def exists(mdp, state, player_idx, terrain_type, obj):
         for x in range(valid_map.shape[1]):
             if valid_map[y, x] and dist[y, x] != -1:
                 candidates.append((x, y))
-    
+
     return len(candidates) > 0

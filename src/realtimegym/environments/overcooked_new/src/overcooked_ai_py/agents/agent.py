@@ -23,7 +23,7 @@ class Agent(object):
     def actions(self, states, agent_indices):
         """
         A multi-state version of the action method. This enables for parallized
-        implementations that can potentially give speedups in action prediction. 
+        implementations that can potentially give speedups in action prediction.
 
         Args:
             states (list): list of OvercookedStates for which we want actions for
@@ -62,7 +62,7 @@ class Agent(object):
 
 class AgentGroup(object):
     """
-    AgentGroup is a group of N agents used to sample 
+    AgentGroup is a group of N agents used to sample
     joint actions in the context of an OvercookedEnv instance.
     """
 
@@ -101,7 +101,7 @@ class AgentPair(AgentGroup):
     for both fields can lead to problems if the agents have state / history)
     """
 
-    def __init__(self, *agents, allow_duplicate_agents=False): 
+    def __init__(self, *agents, allow_duplicate_agents=False):
         super().__init__(*agents, allow_duplicate_agents=allow_duplicate_agents)
         assert self.n == 2
         self.a0, self.a1 = self.agents
@@ -145,14 +145,14 @@ class AgentFromPolicy(Agent):
     """
     This is a useful Agent class backbone from which to subclass from NN-based agents.
     """
-    
+
     def __init__(self, policy):
         """
         Takes as input an NN Policy instance
         """
         self.policy = policy
         self.reset()
-        
+
     def action(self, state):
         return self.actions([state], [self.agent_index])[0]
 
@@ -167,7 +167,7 @@ class AgentFromPolicy(Agent):
     def set_mdp(self, mdp):
         super().set_mdp(mdp)
         self.policy.mdp = mdp
-    
+
     def reset(self):
         super(AgentFromPolicy, self).reset()
         self.policy.mdp = None
@@ -182,7 +182,7 @@ class RandomAgent(Agent):
         self.sim_threads = sim_threads
         self.all_actions = all_actions
         self.custom_wait_prob = custom_wait_prob
-    
+
     def action(self, state):
         action_probs = np.zeros(Action.NUM_ACTIONS)
         legal_actions = list(Action.MOTION_ACTIONS)
@@ -211,7 +211,7 @@ class StayAgent(Agent):
 
     def __init__(self, sim_threads=None):
         self.sim_threads = sim_threads
-    
+
     def action(self, state):
         a = Action.STAY
         return a, {}
@@ -229,7 +229,7 @@ class FixedPlanAgent(Agent):
     def __init__(self, plan):
         self.plan = plan
         self.i = 0
-    
+
     def action(self, state):
         if self.i >= len(self.plan):
             return Action.STAY, {}

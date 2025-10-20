@@ -15,7 +15,7 @@ def run_static_resizeable_window(surface, fps=30):
         while True:
             pygame.event.pump()
             event = pygame.event.wait()
-            if event.type == QUIT: 
+            if event.type == QUIT:
                 pygame.display.quit()
                 pygame.quit()
             elif event.type == VIDEORESIZE:
@@ -68,10 +68,10 @@ class MultiFramePygameImage:
     def __init__(self, img_path, frames_path):
         self.image = pygame.image.load(img_path)
         self.frames_rectangles = MultiFramePygameImage.load_frames_rectangles(frames_path)
-    
+
     def blit_on_surface(self, surface, top_left_pixel_position, frame_name, **kwargs):
             surface.blit(self.image, top_left_pixel_position, area=self.frames_rectangles[frame_name], **kwargs)
-    
+
     @staticmethod
     def load_frames_rectangles(json_path):
         frames_json = load_from_json(json_path)

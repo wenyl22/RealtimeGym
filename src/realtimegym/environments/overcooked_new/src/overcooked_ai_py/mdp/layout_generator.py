@@ -136,7 +136,7 @@ class LayoutGenerator(object):
         else:
             required_keys = ["inner_shape", "prop_empty", "prop_feats", "display"]
             # with generate_all_orders key start_all_orders will be generated inside make_new_layout method
-            if not mdp_gen_params.get("generate_all_orders"): 
+            if not mdp_gen_params.get("generate_all_orders"):
                 required_keys.append("start_all_orders")
             missing_keys = [k for k in required_keys if k not in mdp_gen_params.keys()]
             if len(missing_keys) != 0:
@@ -146,13 +146,13 @@ class LayoutGenerator(object):
             assert inner_shape[0] <= outer_shape[0] and inner_shape[1] <= outer_shape[1], \
                 "inner_shape cannot fit into the outershap"
             layout_generator = LayoutGenerator(self.mdp_params_generator, outer_shape=self.outer_shape)
-            
+
             if "feature_types" not in mdp_gen_params:
                 mdp_gen_params["feature_types"] = DEFAULT_FEATURE_TYPES
-            
+
             mdp_generator_fn = lambda: layout_generator.make_new_layout(mdp_gen_params)
         return mdp_generator_fn()
-    
+
     @staticmethod
     def create_base_params(mdp_gen_params):
         assert mdp_gen_params.get("start_all_orders") or mdp_gen_params.get("generate_all_orders")
@@ -165,7 +165,7 @@ class LayoutGenerator(object):
         if "recipe_times" in mdp_gen_params:
             recipe_params["recipe_times"] = mdp_gen_params["recipe_times"]
         return recipe_params
-        
+
     @staticmethod
     def add_generated_mdp_params_orders(mdp_params):
         """
@@ -178,7 +178,7 @@ class LayoutGenerator(object):
 
             if all_orders_kwargs.get("recipes"):
                  all_orders_kwargs["recipes"] = [Recipe.from_dict(r) for r in all_orders_kwargs["recipes"]]
-        
+
             all_recipes = Recipe.generate_random_recipes(**all_orders_kwargs)
             mdp_params["start_all_orders"] = [r.to_dict() for r in all_recipes]
         else:
@@ -188,7 +188,7 @@ class LayoutGenerator(object):
         if mdp_params.get("generate_bonus_orders"):
             bonus_orders_kwargs = copy.deepcopy(mdp_params["generate_bonus_orders"])
 
-            if not bonus_orders_kwargs.get("recipes"): 
+            if not bonus_orders_kwargs.get("recipes"):
                 bonus_orders_kwargs["recipes"] = all_recipes
 
             bonus_recipes = Recipe.generate_random_recipes(**bonus_orders_kwargs)
@@ -212,9 +212,9 @@ class LayoutGenerator(object):
             base_param=LayoutGenerator.create_base_params(mdp_gen_params),
             feature_types=mdp_gen_params["feature_types"],
             display=mdp_gen_params["display"]
-        )      
+        )
 
-    def make_disjoint_sets_layout(self, inner_shape, prop_empty, prop_features, base_param, feature_types=DEFAULT_FEATURE_TYPES, display=True):        
+    def make_disjoint_sets_layout(self, inner_shape, prop_empty, prop_features, base_param, feature_types=DEFAULT_FEATURE_TYPES, display=True):
         grid = Grid(inner_shape)
         self.dig_space_with_disjoint_sets(grid, prop_empty)
         self.add_features(grid, prop_features, feature_types)
@@ -292,7 +292,7 @@ class LayoutGenerator(object):
 
     def add_features(self, grid, prop_features=0, feature_types=DEFAULT_FEATURE_TYPES):
         """
-        Places one round of basic features and then adds random features 
+        Places one round of basic features and then adds random features
         until prop_features of valid locations are filled"""
 
         valid_locations = grid.valid_feature_locations()

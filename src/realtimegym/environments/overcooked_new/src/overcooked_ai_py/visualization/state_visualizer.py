@@ -27,7 +27,7 @@ class StateVisualizer:
         "player_colors": ['blue', 'green'],
         "is_rendering_hud": True,
         "hud_font_size": 20,
-        "hud_font_path": roboto_path, 
+        "hud_font_path": roboto_path,
         "hud_system_font_name": None, # if set to None use hud_font_path
         "hud_font_color": (255,255,255), # white
         "hud_data_default_key_order" : ["all_orders", "bonus_orders", "time_left", "score", "potential"],
@@ -40,7 +40,7 @@ class StateVisualizer:
         "is_rendering_cooking_timer": True,
         "show_timer_when_cooked": True,
         "cooking_timer_font_size": 20, # # if set to None use cooking_timer_font_path
-        "cooking_timer_font_path": roboto_path, 
+        "cooking_timer_font_path": roboto_path,
         "cooking_timer_system_font_name": None,
         "cooking_timer_font_color": (255, 0, 0), # red
         "grid": None,
@@ -67,7 +67,7 @@ class StateVisualizer:
         pygame.font.init()
         if not hasattr(self, "_font"):
             self._fonts = {}
-        # initializing fonts only if needed because it can take a quite long time, 
+        # initializing fonts only if needed because it can take a quite long time,
         #   see https://pygame.readthedocs.io/en/latest/4_text/text.html#initialize-a-font
         if self.is_rendering_hud:
             self.hud_font = self._init_font(self.hud_font_size, self.hud_font_path, self.hud_system_font_name)
@@ -176,7 +176,7 @@ class StateVisualizer:
         grid_surface = pygame.surface.Surface(self._unscaled_grid_pixel_size(grid))
         self._render_grid(grid_surface, grid)
         self._render_players(grid_surface, state.players)
-        self._render_objects(grid_surface, state.objects, grid)       
+        self._render_objects(grid_surface, state.objects, grid)
 
         if self.scale_by_factor != 1:
             grid_surface = scale_surface_by_factor(grid_surface, self.scale_by_factor)
@@ -220,7 +220,7 @@ class StateVisualizer:
     def _check_config_validity(config):
         assert set(config.keys()).issubset(set(StateVisualizer.DEFAULT_VALUES.keys()))
 
-    def _init_font(self, font_size, font_path=None, system_font_name=None):   
+    def _init_font(self, font_size, font_path=None, system_font_name=None):
         if system_font_name:
             key = "%i-sys:%s" %(font_size, system_font_name)
             font = self._fonts.get(key) or pygame.font.SysFont(system_font_name, font_size)
@@ -238,7 +238,7 @@ class StateVisualizer:
     def _render_grid(self, surface, grid):
         for y_tile, row in enumerate(grid):
             for x_tile, tile in enumerate(row):
-                self.TERRAINS_IMG.blit_on_surface(surface, self._position_in_unscaled_pixels((x_tile, y_tile)), 
+                self.TERRAINS_IMG.blit_on_surface(surface, self._position_in_unscaled_pixels((x_tile, y_tile)),
                                              StateVisualizer.TILE_TO_FRAME_NAME[tile])
 
     def _position_in_unscaled_pixels(self, position):
@@ -307,7 +307,7 @@ class StateVisualizer:
             if obj.name == "soup":
                 render_soup(surface, obj, grid)
             else:
-                self.OBJECTS_IMG.blit_on_surface(surface, self._position_in_unscaled_pixels(obj.position), obj.name)            
+                self.OBJECTS_IMG.blit_on_surface(surface, self._position_in_unscaled_pixels(obj.position), obj.name)
 
     def _render_cooking_timers(self, surface, objects, grid):
         for key, obj in objects.items():
@@ -318,7 +318,7 @@ class StateVisualizer:
                     (tile_pos_x, tile_pos_y) = self._position_in_scaled_pixels(obj.position)
 
                     # calculate font position to be in center on x axis, and 0.9 from top on y axis
-                    font_position = (tile_pos_x + int((self.tile_size - text_surface.get_width() ) * 0.5), 
+                    font_position = (tile_pos_x + int((self.tile_size - text_surface.get_width() ) * 0.5),
                                  tile_pos_y + int((self.tile_size - text_surface.get_height() ) * 0.9))
                     surface.blit(text_surface, font_position)
 
@@ -359,7 +359,7 @@ class StateVisualizer:
                 unscaled_order_surface.fill(self.background_color)
                 self.SOUPS_IMG.blit_on_surface(unscaled_order_surface, (0,0), frame_name)
                 if scaled_order_size == unscaled_order_size:
-                    scaled_order_surface = unscaled_order_surface 
+                    scaled_order_surface = unscaled_order_surface
                 else:
                     scaled_order_surface = pygame.transform.scale(unscaled_order_surface, (order_width, order_width))
                 recipes_surface.blit(scaled_order_surface, (next_surface_x, 0))

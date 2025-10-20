@@ -47,7 +47,7 @@ class TestRecipe(unittest.TestCase):
 
         if os.path.exists(self.pickle_temp_dir):
             shutil.rmtree(self.pickle_temp_dir)
-            
+
 
     def test_eq(self):
 
@@ -73,7 +73,7 @@ class TestRecipe(unittest.TestCase):
             save_pickle(recipe, pickle_path)
             loaded = load_pickle(pickle_path)
             loaded_recipes.append(loaded)
-        
+
         # Ensure loaded recipes equal corresponding original recipe
         for original, loaded in zip(self.recipes, loaded_recipes):
             self.assertEqual(original, loaded)
@@ -122,14 +122,14 @@ class TestRecipe(unittest.TestCase):
         only_onions_recipes = [Recipe(["onion", "onion"]), Recipe(["onion", "onion", "onion"])]
         for _ in range(100):
             self.assertCountEqual(only_onions_recipes, Recipe.generate_random_recipes(n=2, min_size=2, max_size=3, ingredients=["onion"]))
-        
-        self.assertCountEqual(only_onions_recipes, set([Recipe.generate_random_recipes(n=1, recipes=only_onions_recipes)[0] for _ in range(100)])) # false positives rate for this test is 1/10^99 
+
+        self.assertCountEqual(only_onions_recipes, set([Recipe.generate_random_recipes(n=1, recipes=only_onions_recipes)[0] for _ in range(100)])) # false positives rate for this test is 1/10^99
 
     def _expected_num_recipes(self, num_ingredients, max_len):
         return comb(num_ingredients + max_len, num_ingredients) - 1
 
 class TestSoupState(unittest.TestCase):
-    
+
     def setUp(self):
         Recipe.configure({})
         self.s1 = SoupState.get_soup((0, 0), num_onions=0, num_tomatoes=0)
@@ -172,11 +172,11 @@ class TestSoupState(unittest.TestCase):
     def test_cooking(self):
         self.s1.add_ingredient_from_str(Recipe.ONION)
         self.s1.add_ingredient_from_str(Recipe.TOMATO)
-        
+
         self.assertTrue(self.s1.is_idle)
         self.assertFalse(self.s1.is_cooking)
         self.assertFalse(self.s1.is_full)
-        
+
         self.s1.begin_cooking()
 
         self.assertFalse(self.s1.is_idle)
@@ -200,7 +200,7 @@ class TestSoupState(unittest.TestCase):
         try:
             self.s1.recipe
             self.fail("Expected ValueError to be raised")
-        except ValueError as e: 
+        except ValueError as e:
             pass
         except Exception as e:
             self.fail("Expected ValueError to be raised, {} raised instead".format(e))
@@ -208,7 +208,7 @@ class TestSoupState(unittest.TestCase):
         try:
             self.s2.recipe
             self.fail("Expected ValueError to be raised")
-        except ValueError as e: 
+        except ValueError as e:
             pass
         except Exception as e:
             self.fail("Expected ValueError to be raised, {} raised instead".format(e))
@@ -216,7 +216,7 @@ class TestSoupState(unittest.TestCase):
         self.assertEqual(self.s4.recipe, Recipe([Recipe.TOMATO, Recipe.TOMATO]))
 
     def test_invalid_ops(self):
-        
+
         # Cannot cook an empty soup
         self.assertRaises(ValueError, self.s1.begin_cooking)
 
@@ -264,7 +264,7 @@ class TestDirection(unittest.TestCase):
         # Check that all directions are distinct
         num_directions = len(all_directions)
         self.assertEqual(len(set(all_directions)), num_directions)
-        
+
         # Check that the numbers are 0, 1, ... num_directions - 1
         self.assertEqual(set(all_numbers), set(range(num_directions)))
 
@@ -379,7 +379,7 @@ class TestGridworld(unittest.TestCase):
             expected = load_from_json(expected_path)
             expected_state = OvercookedState.from_dict(expected['state'])
             expected_reward = expected['reward']
-            
+
             # Make sure everything lines up (note __eq__ is transitive)
             self.assertTrue(pred_state.time_independent_equal(expected_state), '\n' + str(pred_state) + '\n' + str(expected_state))
             self.assertEqual(sparse_reward, expected_reward)
@@ -445,7 +445,7 @@ class TestGridworld(unittest.TestCase):
                 print(self.base_mdp.state_string(state))
                 print("potential: ", self.base_mdp.potential_function(state, mp))
         val1 = self.base_mdp.potential_function(state, mp)
-        
+
 
         # Pick up tomato
         if self.verbose:
@@ -471,7 +471,7 @@ class TestGridworld(unittest.TestCase):
                 print(self.base_mdp.state_string(state))
                 print("potential: ", self.base_mdp.potential_function(state, mp))
         val3 = self.base_mdp.potential_function(state, mp)
-        
+
         # Pot onion
         if self.verbose:
             print("pot onion")
@@ -533,13 +533,13 @@ class TestGridworld(unittest.TestCase):
                 print("potential: ", self.base_mdp.potential_function(state, mp))
         val8 = self.base_mdp.potential_function(state, mp)
 
-        
+
 
         self.assertLess(val6, val7, "Potting onion should increase potential")
         self.assertLess(val7, val8, "Potting tomato should increase potential")
 
         ## Useless pickups ##
-        
+
         # pickup tomato
         if self.verbose:
             print("pickup tomato")
@@ -566,7 +566,7 @@ class TestGridworld(unittest.TestCase):
         self.assertLessEqual(val10, val8, "Extraneous pickup should not increase potential")
 
         ## Catastrophic soup failure ##
-        
+
         # pot tomato
         if self.verbose:
             print("pot catastrophic tomato")
@@ -800,7 +800,7 @@ class TestFeaturizations(unittest.TestCase):
     def test_lossless_state_featurization(self):
         trajs = self.env.get_rollouts(self.greedy_human_model_pair, num_games=5, info=False)
         featurized_observations = [[self.base_mdp.lossless_state_encoding(state) for state in ep_states] for ep_states in trajs["ep_states"]]
-        
+
         pickle_path = os.path.join(TESTING_DATA_DIR, "test_lossless_state_featurization", "expected")
 
         # NOTE: If the featurizations are updated intentionally, you can overwrite the expected
@@ -932,7 +932,7 @@ class TestOvercookedEnvironment(unittest.TestCase):
         mdp0 = OvercookedGridworld.from_layout_name("cramped_room")
         mdp1 = OvercookedGridworld.from_layout_name("counter_circuit")
         mdp_fn = lambda _ignored: np.random.choice([mdp0, mdp1])
-        
+
         # Default env
         env = OvercookedEnv(mdp_fn, horizon=100)
         env.get_rollouts(self.rnd_agent_pair, 5, info=False)
@@ -986,7 +986,7 @@ class TestOvercookedEnvironment(unittest.TestCase):
         mdp_gen_params = {"layout_name": 'cramped_room'}
         mdp_fn = LayoutGenerator.mdp_gen_fn_from_dict(mdp_gen_params)
         env = OvercookedEnv(mdp_fn, **DEFAULT_ENV_PARAMS)
-        
+
         layouts_seen = []
         for _ in range(5):
             layouts_seen.append(env.mdp.terrain_mtx)
@@ -1004,7 +1004,7 @@ class TestOvercookedEnvironment(unittest.TestCase):
 
         all_same_layout = all([np.array_equal(env.mdp.terrain_mtx, terrain) for terrain in layouts_seen])
         self.assertFalse(all_same_layout)
-        
+
     def test_random_layout_feature_types(self):
         mandatory_features = {POT, DISH_DISPENSER, SERVING_LOC}
         optional_features = {ONION_DISPENSER, TOMATO_DISPENSER}
@@ -1047,7 +1047,7 @@ class TestOvercookedEnvironment(unittest.TestCase):
             env.reset()
             self.assertCountEqual(env.mdp.start_all_orders, only_onions_dict_recipes)
             self.assertEqual(len(env.mdp.start_bonus_orders), 0)
-        
+
         # checking if bonus_orders is subset of all_orders even if not specified
 
         mdp_gen_params = {"generate_all_orders": {"n":2, "ingredients": ["onion"], "min_size":2, "max_size":3},
@@ -1079,8 +1079,8 @@ class TestOvercookedEnvironment(unittest.TestCase):
             env.reset()
             generated_recipes_strings |= {json.dumps(o, sort_keys=True) for o in env.mdp.start_all_orders}
         self.assertTrue(len(generated_recipes_strings) > 3)
-        
-        
+
+
 class TestGymEnvironment(unittest.TestCase):
 
     def setUp(self):

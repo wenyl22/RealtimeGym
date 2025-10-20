@@ -127,7 +127,7 @@ class TestMotionPlanner(unittest.TestCase):
         self.simple_mdp_orientation_change(planner)
         self.simple_mdp_basic_plan(planner)
         self.simple_mdp_orientation_optimization_dependent_plans(planner)
-        
+
     def simple_mdp_already_at_goal(self, planner):
         start_status = goal_status = ((1, 1), n)
         self.check_single_motion_plan(planner, start_status, goal_status, expected_length=1)
@@ -164,7 +164,7 @@ class TestMotionPlanner(unittest.TestCase):
         dummy_agent = P((3, 2), n)
         start_state = OvercookedState([P(*start_pos_and_or), dummy_agent], {}, all_orders=simple_mdp.start_all_orders)
         action_plan, pos_and_or_plan, plan_cost = motion_planner.get_plan(start_pos_and_or, goal_pos_and_or)
-        
+
         # Checking that last state obtained matches goal position
         self.assertEqual(pos_and_or_plan[-1], goal_pos_and_or)
 
@@ -178,7 +178,7 @@ class TestMotionPlanner(unittest.TestCase):
         resulting_state, _ = env.execute_plan(start_state, joint_action_plan)
         self.assertEqual(resulting_state.players_pos_and_or[0], goal_pos_and_or)
 
-        if expected_length is not None: 
+        if expected_length is not None:
             self.assertEqual(len(action_plan), expected_length)
 
 
@@ -192,7 +192,7 @@ class TestJointMotionPlanner(unittest.TestCase):
         joint_action_plan, end_jm_state, finshing_times = jm_planner.get_low_level_action_plan(start, goal)
         optimal_plan = [(n, e), (interact, n)]
         self.assertEqual(joint_action_plan, optimal_plan)
-        
+
         optimal_end_jm_state = (((1, 1), n), ((2, 1), n))
         self.assertEqual(end_jm_state, optimal_end_jm_state)
 
@@ -202,7 +202,7 @@ class TestJointMotionPlanner(unittest.TestCase):
     def test_with_start_orientations_simple_mdp(self):
         jm_planner = or_ml_action_manager_simple.joint_motion_planner
         self.simple_mdp_suite(jm_planner)
-    
+
     def test_without_start_orientations_simple_mdp(self):
         jm_planner = ml_action_manager_simple.joint_motion_planner
         self.simple_mdp_suite(jm_planner)

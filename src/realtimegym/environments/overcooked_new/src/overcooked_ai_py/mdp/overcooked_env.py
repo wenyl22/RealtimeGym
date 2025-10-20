@@ -187,7 +187,7 @@ class OvercookedEnv(object):
     def step(self, joint_action, joint_agent_action_info=None, display_phi=False):
         """Performs a joint action, updating the environment state
         and providing a reward.
-        
+
         On being done, stats about the episode are added to info:
             ep_sparse_r: the environment sparse reward, given only at soup delivery
             ep_shaped_r: the component of the reward that is due to reward shaped (excluding sparse rewards)
@@ -197,14 +197,14 @@ class OvercookedEnv(object):
         if joint_agent_action_info is None: joint_agent_action_info = [{}, {}]
         next_state, mdp_infos = self.mdp.get_state_transition(self.state, joint_action, display_phi, self.mp)
 
-        # Update game_stats 
+        # Update game_stats
         self._update_game_stats(mdp_infos)
 
         # Update state and done
         self.state = next_state
         done = self.is_done()
         env_info = self._prepare_info_dict(joint_agent_action_info, mdp_infos)
-        
+
         if done: self._add_episode_info(env_info)
 
         timestep_sparse_reward = sum(mdp_infos["sparse_reward_by_agent"])
@@ -273,7 +273,7 @@ class OvercookedEnv(object):
         # Get the agent action info, that could contain info about action probs, or other
         # custom user defined information
         env_info = {"agent_infos": [joint_agent_action_info[agent_idx] for agent_idx in range(self.mdp.num_players)]}
-        # TODO: This can be further simplified by having all the mdp_infos copied over to the env_infos automatically 
+        # TODO: This can be further simplified by having all the mdp_infos copied over to the env_infos automatically
         env_info["sparse_r_by_agent"] = mdp_infos["sparse_reward_by_agent"]
         env_info["shaped_r_by_agent"] = mdp_infos["shaped_reward_by_agent"]
         env_info["phi_s"] = mdp_infos["phi_s"] if "phi_s" in mdp_infos else None
@@ -312,7 +312,7 @@ class OvercookedEnv(object):
     ####################
 
     def execute_plan(self, start_state, joint_action_plan, display=False):
-        """Executes action_plan (a list of joint actions) from a start 
+        """Executes action_plan (a list of joint actions) from a start
         state in the mdp and returns the resulting state."""
         self.state = start_state
         done = False
@@ -369,10 +369,10 @@ class OvercookedEnv(object):
     def get_rollouts(self, agent_pair, num_games, display=False, dir=None, final_state=False, display_phi=False,
                      display_until=np.Inf, metadata_fn=None, metadata_info_fn=None, info=True):
         """
-        Simulate `num_games` number rollouts with the current agent_pair and returns processed 
+        Simulate `num_games` number rollouts with the current agent_pair and returns processed
         trajectories.
 
-        Returning excessive information to be able to convert trajectories to any required format 
+        Returning excessive information to be able to convert trajectories to any required format
         (baselines, stable_baselines, etc)
 
         metadata_fn returns some metadata information computed at the end of each trajectory based on
@@ -507,11 +507,11 @@ class Overcooked(gym.Env):
     NOTE: Observations returned are in a dictionary format with various information that is
     necessary to be able to handle the multi-agent nature of the environment. There are probably
     better ways to handle this, but we found this to work with minor modifications to OpenAI Baselines.
-    
-    NOTE: The index of the main agent in the mdp is randomized at each reset of the environment, and 
-    is kept track of by the self.agent_idx attribute. This means that it is necessary to pass on this 
+
+    NOTE: The index of the main agent in the mdp is randomized at each reset of the environment, and
+    is kept track of by the self.agent_idx attribute. This means that it is necessary to pass on this
     information in the output to know for which agent index featurizations should be made for other agents.
-    
+
     For example, say one is training A0 paired with A1, and A1 takes a custom state featurization.
     Then in the runner.py loop in OpenAI Baselines, we will get the lossless encodings of the state,
     and the true Overcooked state. When we encode the true state to feed to A1, we also need to know
@@ -526,13 +526,13 @@ class Overcooked(gym.Env):
         """
         if baselines_reproducible:
             # NOTE:
-            # This will cause all agent indices to be chosen in sync across simulation 
+            # This will cause all agent indices to be chosen in sync across simulation
             # envs (for each update, all envs will have index 0 or index 1).
             # This is to prevent the randomness of choosing agent indexes
             # from leaking when using subprocess-vec-env in baselines (which
             # seeding does not reach) i.e. having different results for different
             # runs with the same seed.
-            # The effect of this should be negligible, as all other randomness is 
+            # The effect of this should be negligible, as all other randomness is
             # controlled by the actual run seeds
             np.random.seed(0)
 
@@ -551,10 +551,10 @@ class Overcooked(gym.Env):
 
     def step(self, action):
         """
-        action: 
+        action:
             (agent with index self.agent_idx action, other agent action)
             is a tuple with the joint action of the primary and secondary agents in index format
-        
+
         returns:
             observation: formatted to be standard input for self.agent_idx's policy
         """
@@ -572,7 +572,7 @@ class Overcooked(gym.Env):
             both_agents_ob = (ob_p0, ob_p1)
         else:
             both_agents_ob = (ob_p1, ob_p0)
-        
+
         env_info["policy_agent_idx"] = self.agent_idx
 
         if "episode" in env_info.keys():
@@ -586,7 +586,7 @@ class Overcooked(gym.Env):
     def reset(self):
         """
         When training on individual maps, we want to randomize which agent is assigned to which
-        starting location, in order to make sure that the agents are trained to be able to 
+        starting location, in order to make sure that the agents are trained to be able to
         complete the task starting at either of the hardcoded positions.
 
         NOTE: a nicer way to do this would be to just randomize starting positions, and not
@@ -601,8 +601,8 @@ class Overcooked(gym.Env):
             both_agents_ob = (ob_p0, ob_p1)
         else:
             both_agents_ob = (ob_p1, ob_p0)
-        return {"both_agent_obs": both_agents_ob, 
-                "overcooked_state": self.base_env.state, 
+        return {"both_agent_obs": both_agents_ob,
+                "overcooked_state": self.base_env.state,
                 "other_agent_env_idx": 1 - self.agent_idx}
 
     def render(self, mode="human", close=False):

@@ -84,7 +84,7 @@ class Place_Onion_and_Deliver_Soup_Agent(RandomScriptAgent):
                 "pickup_soup_and_deliver": dict(prob=0.5, args=dict()),
             }
         )
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
         if self._current_period_name == "pickup_onion_and_place_in_pot":
@@ -107,7 +107,7 @@ class Place_Tomato_and_Deliver_Soup_Agent(RandomScriptAgent):
                 "pickup_soup_and_deliver": dict(prob=0.5, args=dict()),
             }
         )
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
         if self._current_period_name == "pickup_tomato_and_place_in_pot":
@@ -121,7 +121,7 @@ class Place_Tomato_and_Deliver_Soup_Agent(RandomScriptAgent):
                 self._current_period_name, self._current_period = self.make_new_period(i=0) # pickup_tomato_and_place_in_pot
                 self._current_period.reset(mdp, state, player_idx)
         return super(Place_Tomato_and_Deliver_Soup_Agent, self).step(mdp, state, player_idx)
-            
+
 class Noisy_Agent(RandomScriptAgent):
     def __init__(self, onion_ratio, soup_ratio, noise_ratio):
         super().__init__(
@@ -132,7 +132,7 @@ class Noisy_Agent(RandomScriptAgent):
                 "pickup_soup_and_place_random": dict(prob=soup_ratio * noise_ratio, args=dict()),
             }
         )
-    
+
     def step(self, mdp, state, player_idx):
         player = state.players[player_idx]
         if 'pickup_onion' in self._current_period_name:

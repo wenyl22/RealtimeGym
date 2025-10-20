@@ -193,7 +193,7 @@ class OvercookedEnv(object):
     def step(self, joint_action, joint_agent_action_info=None, display_phi=False):
         """Performs a joint action, updating the environment state
         and providing a reward.
-        
+
         On being done, stats about the episode are added to info:
             ep_sparse_r: the environment sparse reward, given only at soup delivery
             ep_shaped_r: the component of the reward that is due to reward shaped (excluding sparse rewards)
@@ -203,14 +203,14 @@ class OvercookedEnv(object):
         if joint_agent_action_info is None: joint_agent_action_info = [{}, {}]
         next_state, mdp_infos = self.mdp.get_state_transition(self.state, joint_action, display_phi, self.mp)
 
-        # Update game_stats 
+        # Update game_stats
         self._update_game_stats(mdp_infos)
 
         # Update state and done
         self.state = next_state
         done = self.is_done()
         env_info = self._prepare_info_dict(joint_agent_action_info, mdp_infos)
-        
+
         if done: self._add_episode_info(env_info)
 
         timestep_sparse_reward = sum(mdp_infos["sparse_reward_by_agent"])
@@ -288,7 +288,7 @@ class OvercookedEnv(object):
         # Get the agent action info, that could contain info about action probs, or other
         # custom user defined information
         env_info = {"agent_infos": [joint_agent_action_info[agent_idx] for agent_idx in range(self.mdp.num_players)]}
-        # TODO: This can be further simplified by having all the mdp_infos copied over to the env_infos automatically 
+        # TODO: This can be further simplified by having all the mdp_infos copied over to the env_infos automatically
         env_info["sparse_r_by_agent"] = mdp_infos["sparse_reward_by_agent"]
         env_info["shaped_r_by_agent"] = mdp_infos["shaped_reward_by_agent"]
         env_info["shaped_info_by_agent"] = mdp_infos["shaped_info_by_agent"]
@@ -336,7 +336,7 @@ class OvercookedEnv(object):
     ####################
 
     def execute_plan(self, start_state, joint_action_plan, display=False):
-        """Executes action_plan (a list of joint actions) from a start 
+        """Executes action_plan (a list of joint actions) from a start
         state in the mdp and returns the resulting state."""
         self.state = start_state
         done = False
@@ -393,10 +393,10 @@ class OvercookedEnv(object):
     def get_rollouts(self, agent_pair, num_games, display=False, dir=None, final_state=False, display_phi=False,
                      display_until=np.Inf, metadata_fn=None, metadata_info_fn=None, info=True):
         """
-        Simulate `num_games` number rollouts with the current agent_pair and returns processed 
+        Simulate `num_games` number rollouts with the current agent_pair and returns processed
         trajectories.
 
-        Returning excessive information to be able to convert trajectories to any required format 
+        Returning excessive information to be able to convert trajectories to any required format
         (baselines, stable_baselines, etc)
 
         metadata_fn returns some metadata information computed at the end of each trajectory based on
@@ -531,11 +531,11 @@ class Overcooked(gym.Env):
     NOTE: Observations returned are in a dictionary format with various information that is
     necessary to be able to handle the multi-agent nature of the environment. There are probably
     better ways to handle this, but we found this to work with minor modifications to OpenAI Baselines.
-    
-    NOTE: The index of the main agent in the mdp is randomized at each reset of the environment, and 
-    is kept track of by the self.agent_idx attribute. This means that it is necessary to pass on this 
+
+    NOTE: The index of the main agent in the mdp is randomized at each reset of the environment, and
+    is kept track of by the self.agent_idx attribute. This means that it is necessary to pass on this
     information in the output to know for which agent index featurizations should be made for other agents.
-    
+
     For example, say one is training A0 paired with A1, and A1 takes a custom state featurization.
     Then in the runner.py loop in OpenAI Baselines, we will get the lossless encodings of the state,
     and the true Overcooked state. When we encode the true state to feed to A1, we also need to know
@@ -550,17 +550,17 @@ class Overcooked(gym.Env):
         """
         if baselines_reproducible:
             # NOTE:
-            # This will cause all agent indices to be chosen in sync across simulation 
+            # This will cause all agent indices to be chosen in sync across simulation
             # envs (for each update, all envs will have index 0 or index 1).
             # This is to prevent the randomness of choosing agent indexes
             # from leaking when using subprocess-vec-env in baselines (which
             # seeding does not reach) i.e. having different results for different
             # runs with the same seed.
-            # The effect of this should be negligible, as all other randomness is 
+            # The effect of this should be negligible, as all other randomness is
             # controlled by the actual run seeds
             np.random.seed(0)
         self.all_args = all_args
-        self.agent_idx = 0 
+        self.agent_idx = 0
         self._initial_reward_shaping_factor = all_args.initial_reward_shaping_factor
         self.reward_shaping_factor = all_args.reward_shaping_factor
         self.reward_shaping_horizon = all_args.reward_shaping_horizon
@@ -676,7 +676,7 @@ class Overcooked(gym.Env):
         for a in onehot:
             idx.append(np.argmax(a))
         return idx
-    
+
     def string2array(self, weight):
         w = []
         for s in weight.split(','):
@@ -694,7 +694,7 @@ class Overcooked(gym.Env):
 
     def _setup_observation_space(self):
         dummy_state = self.base_env.mdp.get_standard_start_state()
-        
+
         #ppo observation
         featurize_fn_ppo = lambda state: self.base_env.lossless_state_encoding_mdp(state)
         obs_shape = featurize_fn_ppo(dummy_state)[0].shape
@@ -717,9 +717,9 @@ class Overcooked(gym.Env):
         share_obs_shape = [share_obs_shape[0], share_obs_shape[1], share_obs_shape[2]*self.num_agents]
         high = np.ones(share_obs_shape) * float("inf")
         low = np.ones(share_obs_shape) * 0
-        
+
         return gym.spaces.Box(np.float32(low), np.float32(high), dtype=np.float32)
-    
+
     def _set_agent_policy_id(self, agent_policy_id):
         self.agent_policy_id = agent_policy_id
 
@@ -736,10 +736,10 @@ class Overcooked(gym.Env):
 
     def step(self, action):
         """
-        action: 
+        action:
             (agent with index self.agent_idx action, other agent action)
             is a tuple with the joint action of the primary and secondary agents in index format
-        
+
         returns:
             observation: formatted to be standard input for self.agent_idx's policy
 
@@ -779,7 +779,7 @@ class Overcooked(gym.Env):
             next_state, sparse_reward, done, info = self.base_env.step(joint_action, display_phi=False)
             if self.use_hsp:
                 shaped_info = info["shaped_info_by_agent"]
-                # ['put_onion_on_X', 'put_tomato_on_X', 'put_dish_on_X', 'put_soup_on_X', 'pickup_onion_from_X', 'pickup_onion_from_O', 'pickup_tomato_from_X', 
+                # ['put_onion_on_X', 'put_tomato_on_X', 'put_dish_on_X', 'put_soup_on_X', 'pickup_onion_from_X', 'pickup_onion_from_O', 'pickup_tomato_from_X',
                 # 'pickup_tomato_from_T', 'pickup_dish_from_X', 'pickup_dish_from_D', 'pickup_soup_from_X', 'USEFUL_DISH_PICKUP', 'SOUP_PICKUP', 'PLACEMENT_IN_POT',
                 # 'viable_placement', 'optimal_placement', 'catastrophic_placement', 'useless_placement', 'potting_onion', 'potting_tomato', 'delivery']
                 vec_shaped_info = np.array([[v for k, v in agent_info.items()] for agent_info in shaped_info]).astype(np.float32)[:, :21]
@@ -795,7 +795,7 @@ class Overcooked(gym.Env):
                 dense_reward = info["shaped_r_by_agent"]
                 shaped_reward_p0 = sparse_reward + self.reward_shaping_factor * dense_reward[0]
                 shaped_reward_p1 = sparse_reward + self.reward_shaping_factor * dense_reward[1]
-        
+
         for i in range(2):
             shaped_info = info["shaped_info_by_agent"]
             for k, v in shaped_info[i].items():
@@ -806,10 +806,10 @@ class Overcooked(gym.Env):
             self.traj_to_store.append(self.base_env.state.to_dict())
 
         reward = [[shaped_reward_p0], [shaped_reward_p1]]
-        
+
         if self.agent_idx == 1:
             reward = [[shaped_reward_p1], [shaped_reward_p0]]
-        
+
         self.history_sa = self.history_sa[1:] + [[next_state, None],]
 
         # stuck
@@ -843,7 +843,7 @@ class Overcooked(gym.Env):
                 self.render()
 
         ob_p0, ob_p1 = self.featurize_fn(next_state)
-        
+
         both_agents_ob = (ob_p0, ob_p1)
         if self.agent_idx == 1:
             both_agents_ob = (ob_p1, ob_p0)
@@ -868,7 +868,7 @@ class Overcooked(gym.Env):
     def reset(self, reset_choose = True):
         """
         When training on individual maps, we want to randomize which agent is assigned to which
-        starting location, in order to make sure that the agents are trained to be able to 
+        starting location, in order to make sure that the agents are trained to be able to
         complete the task starting at either of the hardcoded positions.
 
         NOTE: a nicer way to do this would be to just randomize starting positions, and not
@@ -882,17 +882,17 @@ class Overcooked(gym.Env):
 
         if self.random_index:
             self.agent_idx = np.random.choice([0,1])
-        
+
         for a in range(self.num_agents):
             if self.script_agent[a] is not None:
                 self.script_agent[a].reset(self.base_env.mdp, self.base_env.state, a)
-        
+
         self.mdp = self.base_env.mdp
         ob_p0, ob_p1 = self.featurize_fn(self.base_env.state)
         if self.stuck_time > 0:
             self.history_sa = [None for _ in range(self.stuck_time - 1)] + [[self.base_env.state, None]]
 
-        both_agents_ob = (ob_p0, ob_p1) 
+        both_agents_ob = (ob_p0, ob_p1)
         if self.agent_idx == 1:
             both_agents_ob = (ob_p1, ob_p0)
 
@@ -923,7 +923,7 @@ class Overcooked(gym.Env):
     def init_traj(self):
         self.traj = {k: [] for k in DEFAULT_TRAJ_KEYS}
         for key in TIMESTEP_TRAJ_KEYS:
-            self.traj[key].append([])  
+            self.traj[key].append([])
 
     def render(self):
         try:

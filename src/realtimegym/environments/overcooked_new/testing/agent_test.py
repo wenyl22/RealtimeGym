@@ -27,7 +27,7 @@ class TestAgentEvaluator(unittest.TestCase):
 
     def setUp(self):
         self.agent_eval = AgentEvaluator.from_layout_name({"layout_name": "cramped_room"}, {"horizon": 100})
-        
+
     def test_human_model_pair(self):
         trajs = self.agent_eval.evaluate_human_model_pair()
         try:
@@ -42,7 +42,7 @@ class TestAgentEvaluator(unittest.TestCase):
             AgentEvaluator.check_trajectories(trajs, verbose=False)
         except AssertionError as e:
             self.fail("Trajectories were not returned in standard format:\n{}".format(e))
-        
+
     def test_mlam_computation(self):
         try:
             self.agent_eval.env.mlam

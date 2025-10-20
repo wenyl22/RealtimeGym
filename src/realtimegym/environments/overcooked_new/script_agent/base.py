@@ -3,15 +3,15 @@ class BaseScriptPeriod:
     """
     def __init__(self, period_name):
         self.period_name = period_name
-    
+
     def reset(self, mdp, state, player_idx):
         """reset some script period
         """
         raise NotImplementedError
-    
+
     def step(self, mdp, state, player_idx):
         raise NotImplementedError
-    
+
     def done(self, mdp, state, player_idx):
         raise NotImplementedError
 

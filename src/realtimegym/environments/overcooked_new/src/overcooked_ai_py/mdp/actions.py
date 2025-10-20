@@ -6,7 +6,7 @@ class Direction(object):
     """
     The four possible directions a player can be facing.
     """
-    
+
     NORTH = (0, -1)
     SOUTH = (0, 1)
     EAST  = (1, 0)
@@ -43,7 +43,7 @@ class Action(object):
     INDEX_TO_ACTION_INDEX_PAIRS = [v for v in itertools.product(range(len(INDEX_TO_ACTION)), repeat=2)]
     ACTION_TO_INDEX = { a:i for i, a in enumerate(INDEX_TO_ACTION) }
     MOTION_ACTIONS = Direction.ALL_DIRECTIONS + [STAY]
-    ACTION_TO_CHAR = { 
+    ACTION_TO_CHAR = {
         Direction.NORTH: "↑",
         Direction.SOUTH: "↓",
         Direction.EAST: "→",
@@ -51,7 +51,7 @@ class Action(object):
         STAY: "stay",
         INTERACT: INTERACT
     }
-    A_TO_CHAR = { 
+    A_TO_CHAR = {
         Direction.NORTH: "D",
         Direction.SOUTH: "U",
         Direction.EAST: "R",
@@ -90,7 +90,7 @@ class Action(object):
     def sample(action_probs):
         idx = np.random.choice(len(action_probs), p=action_probs)
         return Action.INDEX_TO_ACTION[idx]
-    
+
     @staticmethod
     def argmax(action_probs):
         action_idx = np.argmax(action_probs)
