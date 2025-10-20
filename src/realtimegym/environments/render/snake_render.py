@@ -1,11 +1,12 @@
 import pygame
 import os
 
+
 class SnakeRender:
     def __init__(self, cell_size=60):
         pygame.init()
         self.cell_size = cell_size
-        self.assets_path = os.path.join(os.path.dirname(__file__), 'assets', 'snake')
+        self.assets_path = os.path.join(os.path.dirname(__file__), "assets", "snake")
         self.width = 8 * cell_size
         self.height = 8 * cell_size
 
@@ -14,33 +15,43 @@ class SnakeRender:
         self.load_sprites()
         self.font = pygame.font.Font(None, 36)
 
-
     def load_sprites(self):
         sprite_files = {
-            'apple': 'apple.png',
-            'wall': 'brick-wall.png',
-            'obstacle': 'brick-wall.png',
-            'head': 'head.png',
+            "apple": "apple.png",
+            "wall": "brick-wall.png",
+            "obstacle": "brick-wall.png",
+            "head": "head.png",
         }
 
         for name, filename in sprite_files.items():
             filepath = os.path.join(self.assets_path, filename)
-            if name == 'head':
-                self.sprites['head_down'] = pygame.image.load(filepath)
-                self.sprites['head_down'] = pygame.transform.scale(self.sprites['head_down'], (self.cell_size, self.cell_size))
-                self.sprites['head_up'] = pygame.transform.rotate(self.sprites['head_down'], 180)
-                self.sprites['head_left'] = pygame.transform.rotate(self.sprites['head_down'], -90)
-                self.sprites['head_right'] = pygame.transform.rotate(self.sprites['head_down'], 90)
+            if name == "head":
+                self.sprites["head_down"] = pygame.image.load(filepath)
+                self.sprites["head_down"] = pygame.transform.scale(
+                    self.sprites["head_down"], (self.cell_size, self.cell_size)
+                )
+                self.sprites["head_up"] = pygame.transform.rotate(
+                    self.sprites["head_down"], 180
+                )
+                self.sprites["head_left"] = pygame.transform.rotate(
+                    self.sprites["head_down"], -90
+                )
+                self.sprites["head_right"] = pygame.transform.rotate(
+                    self.sprites["head_down"], 90
+                )
             elif os.path.exists(filepath):
                 sprite = pygame.image.load(filepath)
-                sprite = pygame.transform.scale(sprite, (self.cell_size, self.cell_size))
+                sprite = pygame.transform.scale(
+                    sprite, (self.cell_size, self.cell_size)
+                )
                 self.sprites[name] = sprite
             else:
-              raise FileNotFoundError(f"Sprite file {filename} not found in {self.assets_path}. Please ensure the file exists.")
+                raise FileNotFoundError(
+                    f"Sprite file {filename} not found in {self.assets_path}. Please ensure the file exists."
+                )
         print(f"Loaded sprites: {list(self.sprites.keys())}")
 
-
-        snake_path = os.path.join(self.assets_path, 'snake.png')
+        snake_path = os.path.join(self.assets_path, "snake.png")
         if os.path.exists(snake_path):
             snake_sheet = pygame.image.load(snake_path)
             sheet_width, sheet_height = snake_sheet.get_size()
@@ -49,40 +60,60 @@ class SnakeRender:
 
             head_rect = pygame.Rect(0, 0, sprite_width, sprite_height)
             head_sprite = snake_sheet.subsurface(head_rect)
-            head_sprite = pygame.transform.scale(head_sprite, (self.cell_size, self.cell_size))
+            head_sprite = pygame.transform.scale(
+                head_sprite, (self.cell_size, self.cell_size)
+            )
 
             straight_rect = pygame.Rect(sprite_width, 0, sprite_width, sprite_height)
             straight_sprite = snake_sheet.subsurface(straight_rect)
-            straight_sprite = pygame.transform.scale(straight_sprite, (self.cell_size, self.cell_size))
+            straight_sprite = pygame.transform.scale(
+                straight_sprite, (self.cell_size, self.cell_size)
+            )
 
             tail_rect = pygame.Rect(0, sprite_height, sprite_width, sprite_height)
             tail_sprite = snake_sheet.subsurface(tail_rect)
-            tail_sprite = pygame.transform.scale(tail_sprite, (self.cell_size, self.cell_size))
+            tail_sprite = pygame.transform.scale(
+                tail_sprite, (self.cell_size, self.cell_size)
+            )
 
-            turn_rect = pygame.Rect(sprite_width, sprite_height, sprite_width, sprite_height)
+            turn_rect = pygame.Rect(
+                sprite_width, sprite_height, sprite_width, sprite_height
+            )
             turn_sprite = snake_sheet.subsurface(turn_rect)
-            turn_sprite = pygame.transform.scale(turn_sprite, (self.cell_size, self.cell_size))
-            self.snake_sprites['head_up'] = head_sprite
-            self.snake_sprites['head_right'] = pygame.transform.rotate(head_sprite, -90)
-            self.snake_sprites['head_down'] = pygame.transform.rotate(head_sprite, 180)
-            self.snake_sprites['head_left'] = pygame.transform.rotate(head_sprite, 90)
+            turn_sprite = pygame.transform.scale(
+                turn_sprite, (self.cell_size, self.cell_size)
+            )
+            self.snake_sprites["head_up"] = head_sprite
+            self.snake_sprites["head_right"] = pygame.transform.rotate(head_sprite, -90)
+            self.snake_sprites["head_down"] = pygame.transform.rotate(head_sprite, 180)
+            self.snake_sprites["head_left"] = pygame.transform.rotate(head_sprite, 90)
 
-            self.snake_sprites['tail_left'] = tail_sprite
-            self.snake_sprites['tail_up'] = pygame.transform.rotate(tail_sprite, -90)  
-            self.snake_sprites['tail_right'] = pygame.transform.rotate(tail_sprite, 180)
-            self.snake_sprites['tail_down'] = pygame.transform.rotate(tail_sprite, 90)
-            self.snake_sprites['straight_vertical'] = straight_sprite
-            self.snake_sprites['straight_horizontal'] = pygame.transform.rotate(straight_sprite, 90)
-            self.snake_sprites['turn_up_left'] = turn_sprite
-            self.snake_sprites['turn_up_right'] = pygame.transform.rotate(turn_sprite, -90)
-            self.snake_sprites['turn_down_right'] = pygame.transform.rotate(turn_sprite, 180)
-            self.snake_sprites['turn_down_left'] = pygame.transform.rotate(turn_sprite, 90)
+            self.snake_sprites["tail_left"] = tail_sprite
+            self.snake_sprites["tail_up"] = pygame.transform.rotate(tail_sprite, -90)
+            self.snake_sprites["tail_right"] = pygame.transform.rotate(tail_sprite, 180)
+            self.snake_sprites["tail_down"] = pygame.transform.rotate(tail_sprite, 90)
+            self.snake_sprites["straight_vertical"] = straight_sprite
+            self.snake_sprites["straight_horizontal"] = pygame.transform.rotate(
+                straight_sprite, 90
+            )
+            self.snake_sprites["turn_up_left"] = turn_sprite
+            self.snake_sprites["turn_up_right"] = pygame.transform.rotate(
+                turn_sprite, -90
+            )
+            self.snake_sprites["turn_down_right"] = pygame.transform.rotate(
+                turn_sprite, 180
+            )
+            self.snake_sprites["turn_down_left"] = pygame.transform.rotate(
+                turn_sprite, 90
+            )
         else:
-            raise FileNotFoundError(f"Snake sprite sheet not found at {snake_path}. Please ensure the file exists.")
+            raise FileNotFoundError(
+                f"Snake sprite sheet not found at {snake_path}. Please ensure the file exists."
+            )
 
     def get_snake_body_sprite(self, prev_pos, curr_pos, next_pos, board_size):
         if prev_pos is None or next_pos is None:
-            return self.snake_sprites['straight_horizontal']
+            return self.snake_sprites["straight_horizontal"]
 
         prev_x, prev_y = prev_pos
         curr_x, curr_y = curr_pos
@@ -91,25 +122,25 @@ class SnakeRender:
         to_dir = (next_x - curr_x, next_y - curr_y)
 
         if from_dir[0] == 0 and to_dir[0] == 0:  # 垂直
-            return self.snake_sprites['straight_vertical']
+            return self.snake_sprites["straight_vertical"]
         elif from_dir[1] == 0 and to_dir[1] == 0:  # 水平
-            return self.snake_sprites['straight_horizontal']
+            return self.snake_sprites["straight_horizontal"]
 
         dirs = sorted([from_dir, to_dir])
         if dirs == [(-1, 0), (0, 1)]:
-            return self.snake_sprites['turn_up_left']
+            return self.snake_sprites["turn_up_left"]
         elif dirs == [(0, 1), (1, 0)]:
-            return self.snake_sprites['turn_up_right']
+            return self.snake_sprites["turn_up_right"]
         elif dirs == [(0, -1), (1, 0)]:
-            return self.snake_sprites['turn_down_right']
+            return self.snake_sprites["turn_down_right"]
         elif dirs == [(-1, 0), (0, -1)]:
-            return self.snake_sprites['turn_down_left']
+            return self.snake_sprites["turn_down_left"]
 
-        return self.snake_sprites['straight_horizontal']
+        return self.snake_sprites["straight_horizontal"]
 
     def get_snake_tail_sprite(self, prev_pos, curr_pos):
         if prev_pos is None:
-            return self.snake_sprites['tail_left']
+            return self.snake_sprites["tail_left"]
 
         prev_x, prev_y = prev_pos
         curr_x, curr_y = curr_pos
@@ -117,14 +148,15 @@ class SnakeRender:
         direction = (curr_x - prev_x, curr_y - prev_y)
 
         direction_map = {
-            (1, 0): 'tail_right',
-            (-1, 0): 'tail_left',
-            (0, 1): 'tail_up',
-            (0, -1): 'tail_down'
+            (1, 0): "tail_right",
+            (-1, 0): "tail_left",
+            (0, 1): "tail_up",
+            (0, -1): "tail_down",
         }
 
-        return self.snake_sprites.get(direction_map.get(direction, 'tail_left'),
-                                     self.snake_sprites['tail_left'])
+        return self.snake_sprites.get(
+            direction_map.get(direction, "tail_left"), self.snake_sprites["tail_left"]
+        )
 
     def render(self, env):
         size = env.B * self.cell_size
@@ -132,8 +164,12 @@ class SnakeRender:
         surface.fill((0, 51, 51))
         for i in range(env.B):
             for j in range(env.B):
-                pos = pygame.Rect(j * self.cell_size, (env.B - 1 - i) * self.cell_size,
-                                 self.cell_size, self.cell_size)
+                pos = pygame.Rect(
+                    j * self.cell_size,
+                    (env.B - 1 - i) * self.cell_size,
+                    self.cell_size,
+                    self.cell_size,
+                )
                 if i == 0 or i == env.B - 1 or j == 0 or j == env.B - 1:
                     continue
                 if (i + j) % 2 == 0:
@@ -141,34 +177,40 @@ class SnakeRender:
                 else:
                     surface.fill((0, 102, 102), pos)
 
-        for (x, y) in env.obstacle:
-            pos = (x * self.cell_size, (env.B-1-y) * self.cell_size)
-            surface.blit(self.sprites['obstacle'], pos)
+        for x, y in env.obstacle:
+            pos = (x * self.cell_size, (env.B - 1 - y) * self.cell_size)
+            surface.blit(self.sprites["obstacle"], pos)
 
-        for (x, y) in env.food:
-            pos = (x * self.cell_size, (env.B-1-y) * self.cell_size)
+        for x, y in env.food:
+            pos = (x * self.cell_size, (env.B - 1 - y) * self.cell_size)
             if env.food_attributes[x][y][1] > 0:
-                surface.blit(self.sprites['apple'], pos)
+                surface.blit(self.sprites["apple"], pos)
                 life = env.food_attributes[x][y][0]
                 self.draw_life_bar(surface, life, 12, pos)
 
         for i, (x, y) in enumerate(env.snake):
-            pos = (x * self.cell_size, (env.B-1-y) * self.cell_size)
+            pos = (x * self.cell_size, (env.B - 1 - y) * self.cell_size)
             if i == len(env.snake) - 1:
-                direction_map = {'R': 'right', 'D': 'down', 'L': 'left', 'U': 'up'}
+                direction_map = {"R": "right", "D": "down", "L": "left", "U": "up"}
                 if len(env.snake) == 1:
-                    head_sprite = self.sprites[f'head_{direction_map.get(env.dir, "up")}']
+                    head_sprite = self.sprites[
+                        f"head_{direction_map.get(env.dir, 'up')}"
+                    ]
                 else:
-                    head_sprite = self.snake_sprites[f'head_{direction_map.get(env.dir, "up")}']
+                    head_sprite = self.snake_sprites[
+                        f"head_{direction_map.get(env.dir, 'up')}"
+                    ]
                 surface.blit(head_sprite, pos)
             elif i == 0:
                 prev_pos = env.snake[1] if len(env.snake) > 1 else None
                 tail_sprite = self.get_snake_tail_sprite(prev_pos, (x, y))
                 surface.blit(tail_sprite, pos)
             else:
-                prev_pos = env.snake[i+1] if i < len(env.snake) - 1 else None
-                next_pos = env.snake[i-1] if i > 0 else None
-                body_sprite = self.get_snake_body_sprite(prev_pos, (x, y), next_pos, env.B)
+                prev_pos = env.snake[i + 1] if i < len(env.snake) - 1 else None
+                next_pos = env.snake[i - 1] if i > 0 else None
+                body_sprite = self.get_snake_body_sprite(
+                    prev_pos, (x, y), next_pos, env.B
+                )
                 surface.blit(body_sprite, pos)
         self.draw_game_info(surface, env)
 
@@ -184,7 +226,7 @@ class SnakeRender:
         bar_width = self.cell_size - 4
         bar_height = 6
         bar_x = pos[0] + 2
-        bar_y = pos[1] + 10  
+        bar_y = pos[1] + 10
 
         background_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
         pygame.draw.rect(surface, (100, 0, 0), background_rect)

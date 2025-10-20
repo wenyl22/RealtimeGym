@@ -45,7 +45,7 @@ def make(env_id: str, seed: int = 0, render: bool = False):
     if env_id not in _REGISTRY:
         available = ", ".join(_REGISTRY.keys())
         raise ValueError(
-            f"Unknown environment ID: {env_id}. " f"Available environments: {available}"
+            f"Unknown environment ID: {env_id}. Available environments: {available}"
         )
 
     game_name, cognitive_load = _REGISTRY[env_id]
