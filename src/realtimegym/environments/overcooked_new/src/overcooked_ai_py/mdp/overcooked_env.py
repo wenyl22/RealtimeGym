@@ -326,7 +326,7 @@ class OvercookedEnv(object):
         self.reset(False)
         return successor_state, done
 
-    def run_agents(self, agent_pair, include_final_state=False, display=False, dir=None, display_phi=False, display_until=np.Inf):
+    def run_agents(self, agent_pair, include_final_state=False, display=False, dir=None, display_phi=False, display_until=np.inf):
         """
         Trajectory returned will a list of state-action pairs (s_t, joint_a_t, r_t, done_t, info_t).
         """
@@ -367,7 +367,7 @@ class OvercookedEnv(object):
         return np.array(trajectory, dtype=object), self.state.timestep, total_sparse, total_shaped
 
     def get_rollouts(self, agent_pair, num_games, display=False, dir=None, final_state=False, display_phi=False,
-                     display_until=np.Inf, metadata_fn=None, metadata_info_fn=None, info=True):
+                     display_until=np.inf, metadata_fn=None, metadata_info_fn=None, info=True):
         """
         Simulate `num_games` number rollouts with the current agent_pair and returns processed
         trajectories.

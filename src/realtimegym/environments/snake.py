@@ -220,10 +220,10 @@ class SnakeEnv(BaseEnv):
         for x, y, life_span, value in state_for_llm["foods"]:
             description += f"\t- ({x}, {y}, {life_span}, {value})\n"
         model1_description = (
-            f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
+            f"**Current Turn**: \\( t_0 = {self.game_turn} \\)\n" + description
         )
         model2_description = (
-            f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+            f"**Current Turn**: \\( t_1 = {self.game_turn} \\)\n" + description
         )
         return {
             "model1_description": model1_description,

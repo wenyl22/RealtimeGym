@@ -63,7 +63,7 @@ class AgileThinker(BaseAgent):
         else:
             messages = []
         text, token_num, turn = self.planning_inference(messages, budget, game_turn)
-        self.plan = f"""**Guidance from a Previous Thinking Model:** Turn \( t_1 = {turn} \)\n{text}"""
+        self.plan = f"""**Guidance from a Previous Thinking Model:** Turn \\( t_1 = {turn} \\)\n{text}"""
         if self.log_thinking:
             self.logs["plan"].append(self.plan)
             self.logs["model2_prompt"].append(prompt)

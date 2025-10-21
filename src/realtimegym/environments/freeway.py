@@ -244,28 +244,28 @@ class FreewayEnv(BaseEnv):
     def observe(self):
         state_for_llm = self.llm_state_builder()
         description = (
-            f"""**Player Position:** \( (0, {state_for_llm["player_states"]}) \)\n"""
+            f"""**Player Position:** \\( (0, {state_for_llm["player_states"]}) \\)\n"""
         )
         description += """**Car State**:
-    | Freeway \( k \) | Cars (head \( h \), tail \( \tau \), direction \( d \), speed \( s \)) |
+    | Freeway \\( k \\) | Cars (head \\( h \\), tail \\( \\tau \\), direction \\( d \\), speed \\( s \\)) |
     |-----------------|------------------------------------------------------------------------|\n"""
         car_info = ""
         lane = 1
         for car in state_for_llm["car_states"]:
             if car[0] != lane:
-                description += f"| {lane} | \({car_info}\) |\n"
+                description += f"| {lane} | \\({car_info}\\) |\n"
                 car_info = ""
                 lane = car[0]
             span = car[4] if car[2] == "left" else -car[4]
             if car_info != "":
                 car_info += ", "
             car_info += f"({car[1]}, {car[1] + span}, {car[2]}, {car[3]})"
-        description += f"| {lane} | \({car_info}\) |\n"
+        description += f"| {lane} | \\({car_info}\\) |\n"
         model1_description = (
-            f"""**Current Turn:** \( t_0 = {self.game_turn} \) \n""" + description
+            f"""**Current Turn:** \\( t_0 = {self.game_turn} \\) \n""" + description
         )
         model2_description = (
-            f"""**Current Turn:** \( t_1 = {self.game_turn} \) \n""" + description
+            f"""**Current Turn:** \\( t_1 = {self.game_turn} \\) \n""" + description
         )
         return {
             "model1_description": model1_description,

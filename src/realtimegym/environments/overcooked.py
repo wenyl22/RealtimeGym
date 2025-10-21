@@ -358,6 +358,7 @@ class OvercookedEnv(BaseEnv):
             pot_state=text_pot_state,
         )
         return {
+            "description": model1_description,  # For backward compatibility
             "model1_description": model1_description,
             "model2_description": model2_description,
             "game_turn": self.game_turn,
