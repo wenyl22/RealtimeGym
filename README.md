@@ -54,7 +54,7 @@ Real-time reasoning requires agents to not only produce correct actions, but als
 The following figure shows the benchmark results of different LLM-based agents under various time budgets in the
 three tasks that we provide.
 
-![Fig. 1](assets/fig1.png)
+![Fig. 1](assets/Figure1.png)
 
 
 
