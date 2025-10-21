@@ -41,7 +41,7 @@ dev = [
 ]
 
 [project.scripts]
-realtime-gym = "run_game:main"
+agile_eval = "realtimegym.agile_eval:main"
 
 [project.urls]
 "Homepage" = "https://github.com/wenyl22/RealtimeGym"

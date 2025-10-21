@@ -15,7 +15,6 @@ seed_mapping = {
 def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
     env = SnakeEnv()
     env.set_seed(seed_mapping[cognitive_load][seed])
-    env.reset()
     render = None
     if save_trajectory_gifs:
         render = SnakeRender()
@@ -57,7 +56,6 @@ class SnakeEnv(BaseEnv):
         self.game_turn = 0
         self.reward = 0
         self.terminal = False
-        self._just_reset = False
         # random permute coords
         # random choose 30% of index in range(200) and set self.value to -1
         self.idx = 0
@@ -82,8 +80,6 @@ class SnakeEnv(BaseEnv):
         self.food_attributes[x][y] = (life_span, value)
 
     def step(self, a):
-        """Execute action and return (obs, done, reward)."""
-        self._just_reset = False
         self.r = 0
         self.game_turn += 1
         if (
@@ -125,7 +121,7 @@ class SnakeEnv(BaseEnv):
             self.r -= 1
             self.reward += self.r
             self.terminal = True
-            return self.observe(), self.terminal, self.reward
+            return self.observe(), self.terminal, self.reward, False
         self.snake.append(new_head)
 
         if new_head in self.food:
@@ -148,14 +144,7 @@ class SnakeEnv(BaseEnv):
             self.spawn_food()
         self.reward += self.r
         self.terminal = True if self.game_turn >= 100 else False
-        return self.observe(), self.terminal, self.reward
-
-    def act(self, a):
-        """Legacy method for backward compatibility."""
-        obs, done, reward = self.step(a)
-        reset_flag = self._just_reset
-        self._just_reset = False
-        return reward, reset_flag
+        return self.observe(), self.terminal, self.reward, False
 
     def state_string(self):
         grid_string = ""
@@ -211,20 +200,18 @@ class SnakeEnv(BaseEnv):
         }
 
     def observe(self):
+        if self.terminal:
+            return {}
         state_for_llm = self.llm_state_builder()
         description = "**Cells occupied by walls**:\n"
         description += f"\t - Border Cells: x=0/x={state_for_llm['size'] - 1} or y=0/y={state_for_llm['size'] - 1}.\n"
         description += f"\t - Internal Obstacles: {state_for_llm['internal_obstacles'] if len(state_for_llm['internal_obstacles']) > 0 else 'No internal obstacles'}\n"
         description += f"**Snake Positions**:{state_for_llm['snake']}\n**Snake Head Direction**: {state_for_llm['snake_dir']}\n"
         description += "**Food Positions, Life Span and Value**:\n"
-        for x, y, life_span, value in state_for_llm["foods"]:
+        for (x, y, life_span, value) in state_for_llm["foods"]:
             description += f"\t- ({x}, {y}, {life_span}, {value})\n"
-        model1_description = (
-            f"**Current Turn**: \\( t_0 = {self.game_turn} \\)\n" + description
-        )
-        model2_description = (
-            f"**Current Turn**: \\( t_1 = {self.game_turn} \\)\n" + description
-        )
+        model1_description = f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
+        model2_description = f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
         return {
             "model1_description": model1_description,
             "model2_description": model2_description,

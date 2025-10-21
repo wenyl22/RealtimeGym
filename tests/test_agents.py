@@ -69,7 +69,7 @@ class TestAgentAPI:
                 action = DEFAULT_ACTION
 
             # Environment steps
-            obs, done, reward = env.step(action)
+            obs, done, reward, __ = env.step(action)
             assert isinstance(obs, dict)
             assert isinstance(done, bool)
             assert isinstance(reward, (int, float))
@@ -121,7 +121,7 @@ class TestAgentAPI:
             agent.observe(obs)
             agent.think(timeout=100)
             action = agent.act() or "S"
-            obs, done, _ = env.step(action)
+            obs, done, _, __ = env.step(action)
 
         assert agent.thought_count == initial_thought_count + 3
 
@@ -144,7 +144,7 @@ class TestAgentIntegration:
             agent.observe(obs)
             agent.think(timeout=8192)
             action = agent.act() or DEFAULT_ACTION
-            obs, done, reward = env.step(action)
+            obs, done, reward, __ = env.step(action)
             total_reward += reward
             steps += 1
 
@@ -175,7 +175,7 @@ class TestAgentIntegration:
         # Simulate agent returning None
         action = None or DEFAULT_ACTION
 
-        obs, done, reward = env.step(action)
+        obs, done, reward, __ = env.step(action)
         assert isinstance(obs, dict)
         assert isinstance(done, bool)
 

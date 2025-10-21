@@ -3,8 +3,6 @@ import os
 import sys
 
 import pandas as pd
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from importlib import import_module
@@ -12,16 +10,16 @@ from typing import Any
 
 import pygame
 from PIL import Image
-
-from src.realtimegym.agents.agile import AgileThinker
-from src.realtimegym.agents.planning import PlanningAgent
-from src.realtimegym.agents.reactive import ReactiveAgent
+import realtimegym
+from realtimegym.agents.agile import AgileThinker
+from realtimegym.agents.planning import PlanningAgent
+from realtimegym.agents.reactive import ReactiveAgent
 
 
 def check_args(args):
-    if args.system == "planning":
+    if args.mode == "planning":
         assert args.internal_budget == 0, (
-            "Internal budget must be 0 when system is planning."
+            "Internal budget must be 0 when mode is planning."
         )
     assert args.internal_budget <= args.time_pressure, (
         "Internal budget must be less than or equal to time pressure when method is fast."
@@ -29,39 +27,40 @@ def check_args(args):
 
 
 def game_loop(file, raw_seed, args):
-    env_m: Any = import_module("realtimegym.environments." + args.game)
-    env, seed, render = env_m.setup_env(  # type: ignore
-        raw_seed, args.cognitive_load, args.save_trajectory_gifs
+    # env_m: Any = import_module("realtimegym.environments." + args.game)
+    # env, seed, render = env_m.setup_env(  # type: ignore
+    #     raw_seed, args.cognitive_load, args.save_trajectory_gifs
+    # )
+    version = "0" if args.cognitive_load == "E" else "1" if args.cognitive_load == "M" else "2"
+    env, seed, render = realtimegym.make(
+        f"{args.game.capitalize()}-v{version}", seed=raw_seed, render=args.save_trajectory_gifs
     )
     agent = None
     params = {
         "prompts": import_module("realtimegym.environments.prompts." + args.game),
         "file": file,
         "budget_form": args.budget_format,
-        "port1": args.port1,
-        "port2": args.port2,
-        "api_key": args.api_key,
+        "model2_config": args.planning_model_config,
+        "model1_config": args.reactive_model_config,
         "internal_budget": args.internal_budget,
-        "model1": args.model1 if args.system != "planning" else None,
-        "model2": args.model2 if args.system != "reactive" else None,
         "skip_action": True,
     }
     if args.game == "overcooked":
         params["skip_action"] = False
-    if args.system == "reactive":
+    if args.mode == "reactive":
         agent = ReactiveAgent(**params)  # type: ignore
-    elif args.system == "planning":
+    elif args.mode == "planning":
         agent = PlanningAgent(**params)  # type: ignore
-    elif args.system == "agile":
+    elif args.mode == "agile":
         agent = AgileThinker(**params)  # type: ignore
     else:
-        raise NotImplementedError("System not recognized.")
+        raise NotImplementedError("mode not recognized.")
     if args.checkpoint is not None:  # resume from checkpoint
         checkpoint_file = file.replace(args.log_dir, args.checkpoint)
         df = pd.read_csv(checkpoint_file)
         obs, done = env.reset()
         for a in df["action"]:
-            obs, done, reward = env.step(a)
+            obs, done, reward, reset_flag = env.step(a)
         if done:
             ret = {
                 "seed": seed,
@@ -82,21 +81,12 @@ def game_loop(file, raw_seed, args):
     obs, done = env.reset()
     if render is not None:
         surfaces.append(render.render(env))
-
     while not done:
-        # agent.observe(obs)
         agent.observe(obs)
-        # agent.think(timeout=T_E)
         agent.think(timeout=args.time_pressure)
-        # action = agent.act() or DEFAULT_ACTION
         action = agent.act()
-        if action is None:
-            action = agent.prompts.DEFAULT_ACTION
-        # obs, done, reward = env.step(action)
-        obs, done, reward = env.step(action)
+        obs, done, reward, reset_flag = env.step(action)
         env.summary()
-        # Legacy log method still uses old signature
-        reset_flag = hasattr(env, "_just_reset") and env._just_reset
         agent.log(reward, reset_flag)
         if render is not None:
             surfaces.append(render.render(env))
@@ -128,11 +118,12 @@ def main():
     args = argparse.ArgumentParser(
         description="Real-time reasoning gym configurations."
     )
-    args.add_argument("--api_key", type=str, default="")
-    args.add_argument("--port1", type=str, default="https://api.deepseek.com")
-    args.add_argument("--port2", type=str, default="https://api.deepseek.com")
-    args.add_argument("--model1", type=str, default="deepseek-chat")
-    args.add_argument("--model2", type=str, default="deepseek-reasoner")
+    args.add_argument(
+        '--planning-model-config', type=str, default=None
+    )
+    args.add_argument(
+        '--reactive-model-config', type=str, default=None
+    )
     args.add_argument(
         "--game",
         type=str,
@@ -144,7 +135,7 @@ def main():
     )
     args.add_argument("--time_pressure", type=int, default=8192)
     args.add_argument("--cognitive_load", type=str, choices=["E", "M", "H"])
-    args.add_argument("--system", type=str, choices=["agile", "reactive", "planning"])
+    args.add_argument("--mode", type=str, choices=["agile", "reactive", "planning"])
     args.add_argument("--internal_budget", type=int, default=8192)
     args.add_argument("--log_dir", type=str, default="logs")
     args.add_argument("--seed_num", type=int, default=1)
@@ -156,18 +147,18 @@ def main():
     args = args.parse_args()
     if args.settings == []:
         args.settings = [
-            f"{args.game}_{args.cognitive_load}_{args.time_pressure}_{args.system}_{args.internal_budget}"
+            f"{args.game}_{args.cognitive_load}_{args.time_pressure}_{args.mode}_{args.internal_budget}"
         ]
     instance = []
     for setting in args.settings:
         new_args = argparse.Namespace(**vars(args))
-        game, cognitive_load, time_pressure, system, internal_budget = setting.split(
+        game, cognitive_load, time_pressure, mode, internal_budget = setting.split(
             "_"
         )
         new_args.game = game
         new_args.cognitive_load = cognitive_load
         new_args.time_pressure = int(time_pressure)
-        new_args.system = system
+        new_args.mode = mode
         new_args.internal_budget = int(internal_budget)
         check_args(new_args)
         log_dir = new_args.log_dir + f"/{setting}"

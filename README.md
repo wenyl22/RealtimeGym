@@ -10,7 +10,7 @@ RealtimeGym provides a simple, unified interface for testing how AI agents perfo
 import realtimegym
 
 # Create environment
-env, seed, _ = realtimegym.make('Freeway-v0', seed=0, render=False)
+env, seed, renderer = realtimegym.make('Freeway-v0', seed=0, render=False)
 
 # Simple agent
 class SimpleAgent:
@@ -29,12 +29,13 @@ class SimpleAgent:
 # Run game loop
 agent = SimpleAgent()
 obs, done = env.reset()
-
+total_reward = 0
 while not done:
     agent.observe(obs)
     agent.think(timeout=8192)
     action = agent.act() or "S"
-    obs, done, reward = env.step(action)
+    obs, done, reward, reset = env.step(action) 
+    total_reward = reward # Pay attention that reward here is not accumulative
 
 print(f"Final reward: {reward}")
 ```
@@ -101,100 +102,44 @@ class MyAgent:
         pass
 ```
 
-## Complete Example
-
-Here's a stateful agent that tracks observation history:
-
-```python
-import realtimegym
-
-class StatefulAgent:
-    def __init__(self):
-        self.observations = []
-        self.action = "S"
-
-    def observe(self, observation):
-        self.observations.append(observation)
-
-    def think(self, timeout=None):
-        if not self.observations:
-            return
-
-        # Strategy based on history
-        turn = len(self.observations)
-        if turn % 2 == 0:
-            self.action = "U"
-        else:
-            self.action = "S"
-
-    def act(self):
-        return self.action
-
-# Run the agent
-env, _, _ = realtimegym.make('Freeway-v0', seed=42, render=False)
-agent = StatefulAgent()
-
-obs, done = env.reset()
-total_reward = 0
-
-while not done:
-    agent.observe(obs)
-    agent.think(timeout=8192)
-    action = agent.act() or "S"
-    obs, done, reward = env.step(action)
-    total_reward += reward
-
-print(f"Game finished! Total reward: {total_reward}")
-```
-
 ## Using LLM-Based Agents
 
-RealtimeGym includes built-in agents for LLM evaluation:
+RealtimeGym includes following built-in LLM agents:
+
+| Agent | Description | Use Case | Supported LLM |
+|-------|-------------|----------|--------------|
+| **ReactiveAgent** | Fast, reactive responses | Bounded Latency | All OpenAI-compatible |
+| **PlanningAgent** | Strategic planning | Unbounded Latency | All OpenAI-compatible |
+| **AgileThinker** | Hybrid approach | Combination of Above | Models with transparent thinking tokens
+
+
+You can evaluate them via cli-command
 
 ### Command Line
 
 ```bash
-# Token-based budget (control by token count)
-python run_game.py \
-    --api_key YOUR_API_KEY \
-    --budget_format token \
+agile_eval --budget_format token \
     --time_pressure 8192 \
     --internal_budget 4096 \
     --game freeway \
     --cognitive_load E \
-    --system agile \
-    --model1 deepseek-chat \
-    --model2 deepseek-reasoner
-
-# Time-based budget (control by seconds)
-python run_game.py \
-    --api_key YOUR_API_KEY \
-    --budget_format time \
-    --time_pressure 5.0 \
-    --internal_budget 2.0 \
-    --game snake \
-    --cognitive_load M \
-    --system reactive
+    --mode agile \
+    --reactive-model-config configs/deepseek-v3.2-reactive.yaml \
+    --planning-model-config configs/deepseek-v3.2-planning.yaml \
+     --seed_num 1 --repeat_times 1 \
+    --log_dir logs-debug2
 ```
 
-### Programmatically
+Or more compactly:
 
-```python
-from realtimegym.agents.reactive import ReactiveAgent
-from realtimegym.environments.prompts import freeway
-
-agent = ReactiveAgent(
-    prompts=freeway,
-    file='game_log.csv',
-    budget_form='token',  # or 'time'
-    port1='https://api.deepseek.com',
-    api_key='your-api-key',
-    internal_budget=4096,
-    model1='deepseek-chat',
-    model2='deepseek-reasoner',
-    skip_action=True
-)
+```bash
+agile_eval --budget_format token \
+    --settings freeway_H_8192_agile_4096 \
+    --reactive-model-config configs/deepseek-v3.2-reactive.yaml \
+    --planning-model-config configs/deepseek-v3.2-planning.yaml \
+    --log_dir logs-debug2 --seed_num 1 --repeat_times 1
 ```
+
 
 ## Budget Formats Explained
 
@@ -207,7 +152,6 @@ agent.think(timeout=8192)
 ```
 - Best for: LLM-based agents
 - Measures: Token count from API
-- Use case: Controlling computational cost
 
 ### Time Budget
 ```python
@@ -216,17 +160,9 @@ agent.think(timeout=5.0)
 ```
 - Best for: Real-time scenarios
 - Measures: Wall-clock seconds
-- Use case: Time-critical decision making
 
 Set via `--budget_format token` or `--budget_format time` on command line.
 
-## Available Agent Types
-
-| Agent | Description | Use Case |
-|-------|-------------|----------|
-| **ReactiveAgent** | Fast, reactive responses | Low latency scenarios |
-| **PlanningAgent** | Strategic planning | Complex decision making |
-| **AgileThinker** | Hybrid approach | Balance of speed and planning |
 
 ## Examples
 
@@ -245,8 +181,6 @@ python examples/custom_agent.py
 # Compare difficulty levels
 python examples/difficulty_levels.py
 
-# Budget format guide
-python examples/budget_format.py
 ```
 
 ## API Reference
@@ -262,8 +196,8 @@ obs, done = env.reset()
 # Returns: (observation dict, done flag)
 
 # Take action
-obs, done, reward = env.step(action)
-# Returns: (observation dict, done flag, reward)
+obs, done, reward, reset = env.step(action)
+# Returns: (observation dict, done flag, reward, reset_flag)
 ```
 
 ### Observation Structure
@@ -272,7 +206,8 @@ obs, done, reward = env.step(action)
 {
     'state_string': 'Text representation of game state',
     'game_turn': 42,  # Current turn number
-    'description': 'Detailed state info (game-specific)',
+    'model1_description': 'Detailed state info (game-specific) for reactive agent',
+    'model2_description': 'Detailed state info (game-specific) for planning agent',
     # ... other game-specific fields
 }
 ```
@@ -282,19 +217,8 @@ obs, done, reward = env.step(action)
 Run the test suite:
 
 ```bash
-# All tests (skip Overcooked due to NumPy 2.0 issue)
-pytest -k "not Overcooked"
-
-# With coverage
-pytest --cov=src/realtimegym --cov-report=html
-
-# Specific test file
-pytest tests/test_agents.py
+pytest
 ```
-
-**Test Coverage**: 37/46 tests passing (80%) - all core functionality validated.
-
-See [`tests/README.md`](tests/README.md) for details.
 
 ## Development
 
@@ -320,22 +244,13 @@ ruff format
 # Type checking
 ty check
 ```
-
-### CI/CD
-
-GitHub Actions automatically runs on PRs:
-- ✅ Type checking with `ty`
-- ✅ Linting with `ruff`
-- ✅ Test suite with `pytest`
-
-See [`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml)
-
 ## Project Structure
 
 ```
 realtimegym/
 ├── src/realtimegym/
 │   ├── __init__.py          # Main API (make function)
+│   ├── agile_eval.py       # Agent evaluation script
 │   ├── agents/              # Built-in LLM agents
 │   │   ├── base.py
 │   │   ├── reactive.py
@@ -348,34 +263,11 @@ realtimegym/
 │       └── overcooked.py
 ├── tests/                   # Test suite
 ├── examples/                # Example scripts
-├── run_game.py             # CLI entry point
 └── pyproject.toml          # Package configuration
 ```
 
-## Key Parameters
-
-| Parameter | Description | Values | Default |
-|-----------|-------------|--------|---------|
-| `env_id` | Environment identifier | `Freeway-v0`, `Snake-v1`, etc. | - |
-| `seed` | Random seed | 0-7 | 0 |
-| `render` | Enable visualization | `True`/`False` | `False` |
-| `budget_format` | Budget measurement | `token`/`time` | `token` |
-| `time_pressure` | Total budget per turn | tokens or seconds | 8192 |
-| `internal_budget` | Thinking budget | tokens or seconds | 4096 |
-| `cognitive_load` | Difficulty level | `E`/`M`/`H` | `E` |
-| `system` | Agent type | `reactive`/`planning`/`agile` | - |
-
-## Known Issues
-
-**Overcooked NumPy 2.0**: The Overcooked environment uses vendored third-party code with a NumPy 2.0 incompatibility. To work around:
-- Skip Overcooked tests: `pytest -k "not Overcooked"`
-- Or use NumPy <2.0: `pip install "numpy<2.0"`
-
-See [`THIRD_PARTY_NOTICE.md`](src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md) for details.
-
 ## Documentation
 
-- **[TESTING.md](TESTING.md)** - Testing infrastructure overview
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
 - **[tests/README.md](tests/README.md)** - Detailed test documentation
 - **[examples/README.md](examples/README.md)** - Examples guide

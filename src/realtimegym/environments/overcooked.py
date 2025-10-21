@@ -115,8 +115,6 @@ def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
     env.set_seed(seed)
     env.all_args = all_args
     env.run_dir = run_dir
-
-    env.reset()
     render = None
     if save_trajectory_gifs:
         render = OvercookedRender()
@@ -138,19 +136,13 @@ class OvercookedEnv(BaseEnv):
         self.reward = 0
         self.game_turn = 0
         self.terminal = False
-        self._just_reset = False
-        self.history = [
-            [],
-            [],
-        ]  # history[0] for player 0, history[1] for player 1
+        self.history = [[], []]  # history[0] for player 0, history[1] for player 1
 
         # self.eval_env_infos = defaultdict(list)
         # Return initial observation and done flag
         return self.observe(), self.terminal
 
-    def step(self, a):
-        """Execute action and return (obs, done, reward)."""
-        self._just_reset = False
+    def go(self, a):
         self.game_turn += 1
 
         if a == "U":
@@ -166,31 +158,21 @@ class OvercookedEnv(BaseEnv):
         else:
             action = Action.STAY
         self.gym_env.script_agent[0].next_action = action
-        (
-            eval_ob,
-            eval_share_ob,
-            eval_reward,
-            eval_done,
-            eval_info,
-            eval_available_action,
-            joint_action,
-        ) = self.gym_env.step([[0], [0]])
+        eval_ob, eval_share_ob, eval_reward, eval_done, eval_info, eval_available_action, joint_action = self.gym_env.step([[0], [0]])
         self.reward += sum(eval_reward[0])
         self.terminal = eval_done[0]
         self.history[0].append(Action.A_TO_CHAR[joint_action[0]])
         self.history[1].append(Action.A_TO_CHAR[joint_action[1]])
         return self.observe(), self.terminal, self.reward
 
-    def act(self, a):
+    def step(self, a):
         """Legacy method for backward compatibility."""
-        obs, done, reward = self.step(a)
-        reset_flag = self._just_reset
-        self._just_reset = False
-        return reward, reset_flag
+        obs, done, reward = self.go(a)
+        return obs, done, reward, False
 
     def state_string(self):
         ret = self.gym_env.base_mdp.state_string(self.gym_env.base_env.state)
-        ret = ret.split("\n")
+        ret = ret.split('\n')
         ret = ret[::-1]
         ret = "\n".join(ret)
         ret = ret.replace("↑", "x").replace("↓", "y")
@@ -213,16 +195,13 @@ class OvercookedEnv(BaseEnv):
         all_order_info = self.gym_env.base_env.state.all_order_info()
         terrain = self.gym_env.base_mdp.terrain_pos_dict
         state_for_llm = {
-            "history": self.history
-            if len(self.history[0]) <= 5
-            else [self.history[0][-5:], self.history[1][-5:]],
+            "history": self.history if len(self.history[0]) <= 5 else [self.history[0][-5:], self.history[1][-5:]],
             "game_turn": self.game_turn,
             "state": state,
             "all_orders": all_order_info,
             "layout": terrain,
         }
         return state_for_llm
-
     def observe(self):
         state_for_llm = self.llm_state_builder()
         kitchen_counters = state_for_llm["layout"]["X"]
@@ -262,10 +241,10 @@ class OvercookedEnv(BaseEnv):
             else:
                 history[i] = "No action history"
             if held_object[i] is not None:
-                held_object[i] = "one " + held_object[i]["name"]  # type: ignore
-                if held_object[i] == "one dish":
+                held_object[i] = "one " + held_object[i]["name"]
+                if held_object[i] == "dish":
                     held_object[i] = "clean plate"
-                elif held_object[i] == "one soup":
+                elif held_object[i] == "soup":
                     held_object[i] = "soup in plate"
             else:
                 held_object[i] = "nothing"
@@ -358,7 +337,6 @@ class OvercookedEnv(BaseEnv):
             pot_state=text_pot_state,
         )
         return {
-            "description": model1_description,  # For backward compatibility
             "model1_description": model1_description,
             "model2_description": model2_description,
             "game_turn": self.game_turn,

@@ -11,26 +11,14 @@ class AgileThinker(BaseAgent):
         prompts,
         file,
         budget_form,
-        port1,
-        port2,
-        api_key,
+        model1_config,
+        model2_config,
         internal_budget,
         **kwargs,
     ):
         super().__init__(
-            prompts, file, budget_form, port1, port2, api_key, internal_budget
+            prompts, file, budget_form, model1_config, model2_config, internal_budget
         )
-        self.model1 = kwargs.get("model1", None)
-        self.model2 = kwargs.get("model2", None)
-        if "deepseek-reasoner" in self.model2:
-            self.tokenizer = AutoTokenizer.from_pretrained("deepseek-ai/DeepSeek-R1")
-        if "gpt-oss-20b" in self.model2:
-            self.tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
-        if "Qwen3-30B-A3B-Thinking-2507-FP8" in self.model2:
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                "Qwen/Qwen3-30B-A3B-Thinking-2507-FP8"
-            )
-        # TODO: add more open source model's tokenizer here
 
     def truncate_logs(self):
         final_step = 0
@@ -41,13 +29,10 @@ class AgileThinker(BaseAgent):
             self.logs[col] = self.logs[col][:final_step]
 
     def think(self, timeout=None):
-        """Process observation using dual reasoning systems with given timeout."""
-        if self.current_observation is None:
-            self.action = self.prompts.DEFAULT_ACTION
-            return
-
-        budget = timeout if timeout is not None else self.internal_budget
+        assert self.current_observation is not None and timeout is not None
+        budget = timeout
         observation = self.current_observation
+        self.state_string = observation["state_string"]
         game_turn = observation["game_turn"]
         prompt = ""
         if self.gen_text == "":  # check whether the last generation is finished
@@ -84,3 +69,4 @@ class AgileThinker(BaseAgent):
             self.logs["model1_prompt"].append(prompt)
             self.logs["model1_response"].append(text)
         self.logs["model1_token_num"].append(token_num)
+

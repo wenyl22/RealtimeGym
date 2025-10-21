@@ -53,7 +53,7 @@ def test_difficulty_level(env_id, max_steps=15):
         agent.observe(obs)
         agent.think(timeout=8192)
         action = agent.act() or DEFAULT_ACTION
-        obs, done, reward = env.step(action)
+        obs, done, reward, reset = env.step(action)
         total_reward += reward
 
     print(f"  Completed: {step_count} steps")

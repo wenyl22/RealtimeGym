@@ -9,17 +9,15 @@ class PlanningAgent(BaseAgent):
         prompts,
         file,
         budget_form,
-        port1,
-        port2,
-        api_key,
+        model1_config,
+        model2_config,
         internal_budget,
         **kwargs,
     ):
         assert internal_budget == 0, "Internal budget must be a 0 for PlanningAgent."
         super().__init__(
-            prompts, file, budget_form, port1, port2, api_key, internal_budget
+            prompts, file, budget_form, model1_config, model2_config, internal_budget
         )
-        self.model2 = kwargs.get("model2", None)
         self.skip_action = kwargs.get("skip_action", False)
 
     def truncate_logs(self):
@@ -33,13 +31,9 @@ class PlanningAgent(BaseAgent):
             self.logs[col] = self.logs[col][:final_step]
 
     def think(self, timeout=None):
-        """Process observation and generate action plan with given timeout."""
-        if self.current_observation is None:
-            self.action = self.prompts.DEFAULT_ACTION
-            return
 
-        budget = timeout if timeout is not None else self.internal_budget
-        assert budget is not None
+        assert timeout is not None and self.current_observation is not None
+        budget = timeout
 
         observation = self.current_observation
         game_turn = observation["game_turn"]

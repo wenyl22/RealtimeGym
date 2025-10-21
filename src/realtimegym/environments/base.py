@@ -34,6 +34,7 @@ class BaseEnv:
             obs (dict): New observation after taking the action
             done (bool): Whether the episode is done
             reward (float/int): Reward obtained
+            reset (bool): Whether the environment needs to be reset
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
@@ -47,14 +48,9 @@ class BaseEnv:
     def act(self, a):
         """
         Legacy method. Use step() instead.
-        Take action a, return (reward, reset_flag)
+ 
         """
-        obs, done, reward = self.step(a)
-        # Check if this was a reset (collision in Freeway)
-        reset_flag = hasattr(self, "_just_reset") and self._just_reset
-        if hasattr(self, "_just_reset"):
-            self._just_reset = False
-        return reward, reset_flag
+        raise NotImplementedError("This method has been deprecated. Use step() instead.")
 
     def observe(self):
         """

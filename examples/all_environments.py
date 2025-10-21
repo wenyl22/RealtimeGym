@@ -51,22 +51,21 @@ def run_environment(env_id, max_steps=10):
 
     # Run game loop
     obs, done = env.reset()
-    print(f"Initial state:\n{obs['state_string'][:200]}...")
+    print(f"Initial state:\n{obs['state_string']}")
 
     step_count = 0
     total_reward = 0
 
     while not done and step_count < max_steps:
         step_count += 1
-
         # Agent loop
         agent.observe(obs)
         agent.think(timeout=8192)
         action = agent.act() or DEFAULT_ACTION
 
         # Environment step
-        obs, done, reward = env.step(action)
-        total_reward += reward
+        obs, done, reward, reset = env.step(action)
+        total_reward = reward
 
         print(f"Step {step_count}: Action={action}, Reward={reward}, Done={done}")
 
@@ -83,7 +82,11 @@ def main():
     print("=" * 60)
 
     # Test each environment
-    environments = ["Freeway-v0", "Snake-v0", "Overcooked-v0"]
+    environments = [
+        "Freeway-v0", "Snake-v0", "Overcooked-v0", \
+        "Freeway-v1", "Snake-v1", "Overcooked-v1", \
+        "Freeway-v2", "Snake-v2", "Overcooked-v2",
+    ]
 
     for env_id in environments:
         run_environment(env_id, max_steps=5)

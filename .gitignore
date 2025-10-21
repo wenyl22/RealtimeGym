@@ -16,3 +16,4 @@ __pycache__
 *.sbatch
 *.err
 *.png
+configs/deepseek*

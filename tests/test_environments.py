@@ -70,7 +70,7 @@ class TestEnvironmentAPI:
     def test_step_returns_correct_types(self, env):
         """Test that step() returns (obs, done, reward) with correct types."""
         env.reset()
-        obs, done, reward = env.step("S")
+        obs, done, reward, __ = env.step("S")
 
         assert isinstance(obs, dict), "Observation should be a dictionary"
         assert isinstance(done, bool), "Done flag should be a boolean"
@@ -82,7 +82,7 @@ class TestEnvironmentAPI:
         # For now, we just check it doesn't crash
         try:
             env.reset()
-            obs, done, reward = env.step("S")
+            obs, done, reward, __ = env.step("S")
             assert isinstance(obs, dict)
         except Exception:
             pytest.fail("step() after reset() should not raise exception")
@@ -94,7 +94,7 @@ class TestEnvironmentAPI:
         max_steps = 10
 
         while not done and steps < max_steps:
-            obs, done, reward = env.step("S")
+            obs, done, reward, __ = env.step("S")
             assert isinstance(obs, dict)
             assert isinstance(done, bool)
             assert isinstance(reward, (int, float))
@@ -113,7 +113,7 @@ class TestFreewayEnvironment:
 
         valid_actions = ["U", "D", "S"]
         for action in valid_actions:
-            obs, done, reward = env.step(action)
+            obs, done, reward, __ = env.step(action)
             assert isinstance(obs, dict)
 
     def test_freeway_state_string(self):
@@ -135,7 +135,7 @@ class TestSnakeEnvironment:
 
         valid_actions = ["U", "D", "L", "R", "S"]
         for action in valid_actions:
-            obs, done, reward = env.step(action)
+            obs, done, reward, __ = env.step(action)
             assert isinstance(obs, dict)
 
     def test_snake_food_in_state(self):
@@ -158,7 +158,7 @@ class TestOvercookedEnvironment:
 
         valid_actions = ["U", "D", "L", "R", "I", "S"]
         for action in valid_actions:
-            obs, done, reward = env.step(action)
+            obs, done, reward, __ = env.step(action)
             assert isinstance(obs, dict)
 
     def test_overcooked_state_description(self):
@@ -166,8 +166,9 @@ class TestOvercookedEnvironment:
         env, _, _ = realtimegym.make("Overcooked-v0", seed=0, render=False)
         obs, _ = env.reset()
 
-        assert "description" in obs
-        assert isinstance(obs["description"], str)
+        assert "model1_description" in obs and "model2_description" in obs
+        assert isinstance(obs["model1_description"], str)
+        assert isinstance(obs["model2_description"], str)
 
 
 class TestSeeding:
@@ -194,24 +195,3 @@ class TestSeeding:
         # Note: This might not always be different, but structure should be valid
         assert isinstance(obs1["state_string"], str)
         assert isinstance(obs2["state_string"], str)
-
-
-class TestBackwardCompatibility:
-    """Test backward compatibility with legacy act() method."""
-
-    def test_legacy_act_method_exists(self):
-        """Test that legacy act() method still exists."""
-        env, _, _ = realtimegym.make("Freeway-v0", seed=0, render=False)
-        env.reset()
-
-        assert hasattr(env, "act"), "Legacy act() method should exist"
-
-    def test_legacy_act_returns_reward_and_reset_flag(self):
-        """Test that legacy act() returns (reward, reset_flag)."""
-        env, _, _ = realtimegym.make("Freeway-v0", seed=0, render=False)
-        env.reset()
-
-        reward, reset_flag = env.act("S")
-
-        assert isinstance(reward, (int, float)), "Reward should be numeric"
-        assert isinstance(reset_flag, bool), "Reset flag should be boolean"

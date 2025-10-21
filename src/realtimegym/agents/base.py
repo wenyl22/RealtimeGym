@@ -1,47 +1,36 @@
-import queue
-import re
-import threading
-import time
 from collections import defaultdict
-from typing import Dict, List
-
-import pandas as pd
 from openai import OpenAI
-
-
-def regularize_param(sampling_params, model, messages):
-    reasoning_effort = None
-    if "gpt-oss" in model:
-        reasoning_effort = model.split("-")[-1]
-        model = model.replace("-" + reasoning_effort, "")
-    params = {
-        "model": model,
-        "messages": messages,
-        "max_tokens": sampling_params.get("max_tokens", 80000),
-        "temperature": sampling_params.get("temperature", 1),
-        "top_p": sampling_params.get("top_p", 1),
-    }
-    if "deepseek-reasoner" in model:
-        params["max_tokens"] = min(params["max_tokens"], 65536)
-    elif "deepseek" in model or "Qwen" in model:
-        params["max_tokens"] = min(params["max_tokens"], 32768)
-    if reasoning_effort is not None:
-        params["reasoning_effort"] = reasoning_effort
-    return params
+from typing import List, Dict
+import time
+import pandas as pd
+import queue
+import threading
+import yaml
+from transformers import AutoTokenizer
 
 
 class BaseAgent:
     def __init__(
-        self, prompts, file, budget_form, port1, port2, api_key, internal_budget
+        self, prompts, file, budget_form, model1_config, model2_config, internal_budget
     ):
         self.prompts = prompts
         self.file = file
         self.budget_form = budget_form
-        self.llm1 = OpenAI(api_key=api_key, base_url=port1)
-        self.llm2 = OpenAI(api_key=api_key, base_url=port2)
         self.model1 = None
         self.model2 = None
         self.tokenizer = None
+        if model1_config is not None:
+            with open(model1_config, 'r') as f:
+                self.model1_config = yaml.safe_load(f)
+            self.llm1 = OpenAI(api_key=self.model1_config["api_key"], base_url=self.model1_config["url"])
+            self.model1 = self.model1_config["model"]
+        if model2_config is not None:
+            with open(model2_config, 'r') as f:
+                self.model2_config = yaml.safe_load(f)
+            self.llm2 = OpenAI(api_key=self.model2_config["api_key"], base_url=self.model2_config["url"])
+            self.model2 = self.model2_config["model"]
+            if "tokenizer" in self.model2_config:
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model2_config["tokenizer"])
         self.internal_budget = internal_budget
 
         self.logs = defaultdict(list)
@@ -72,7 +61,6 @@ class BaseAgent:
             observation (dict): Observation containing state information
         """
         self.current_observation = observation
-        self.state_string = observation.get("state_string", "")
 
     def think(self, timeout=None):
         """
@@ -90,10 +78,10 @@ class BaseAgent:
         Returns:
             action (str or None): The action to take, or None for default action
         """
-        return self.action if self.action != "" else None
+        return self.action
 
     def log(self, reward, reset):
-        self.logs["render"].append(self.state_string)
+        self.logs["render"].append(self.current_observation["state_string"])
         self.logs["action"].append(self.action)
         self.logs["reward"].append(reward)
         if reset:
@@ -124,7 +112,9 @@ class BaseAgent:
     def generate(
         self, llm, model: str, messages: List[Dict], sampling_params: Dict
     ) -> tuple[str, int]:
-        params = regularize_param(sampling_params, model, messages)
+        params = sampling_params
+        params["messages"] = messages
+        params["model"] = model
         while True:
             try:
                 text = ""
@@ -151,7 +141,9 @@ class BaseAgent:
     ) -> None:
         self.planning_queue = queue.Queue()
         self.planning_done = threading.Event()
-        params = regularize_param(sampling_params, model, messages)
+        params = sampling_params
+        params["messages"] = messages
+        params["model"] = model
         params["stream"] = True
 
         def planning_worker():
@@ -195,7 +187,9 @@ class BaseAgent:
         return self.planning_done.is_set()
 
     def start_reactive_stream(self, llm, model, messages, sampling_params, max_time):
-        params = regularize_param(sampling_params, model, messages)
+        params = sampling_params
+        params["messages"] = messages
+        params["model"] = model
         params["stream"] = True
         start_time = time.time()
         stream_obj = llm.chat.completions.create(**params)
@@ -214,51 +208,19 @@ class BaseAgent:
         if max_time - (current_time - start_time) > 0:
             time.sleep(max_time - (current_time - start_time))
         return text, token_num
-        # max_time = sampling_params["max_time"]
-        # start_time = time.time()
-        # text, token_num = "", 0
-        # if stream_obj is None:
-        #     while True:
-        #         try:
-        #             stream_obj = llm.chat.completions.create(**params)
-        #             break
-        #         except Exception as e:
-        #             print(f"Error: {e}")
-        #             time.sleep(1)
-        # try:
-        #     for chunk in stream_obj:
-        #         if time.time() - start_time > max_time:
-        #             return text, token_num, stream_obj
-        #         if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content != None:
-        #             if self.planning_reasoning == False:
-        #                 text += "<think>"
-        #                 self.planning_reasoning = True
-        #             text += chunk.choices[0].delta.reasoning_content
-        #         if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content != None:
-        #             if self.planning_reasoning == True:
-        #                 text += "\n</think>\n"
-        #                 self.planning_reasoning = False
-        #             text += chunk.choices[0].delta.content
-        #         if hasattr(chunk, 'usage') and chunk.usage is not None:
-        #             token_num = chunk.usage.completion_tokens
-        # except Exception as e:
-        #     print(f"Error during streaming: {e}")
-        #     return text, token_num, None
-        # return text, token_num, None
 
     def reactive_inference(self, messages, budget):
         assert self.model1 is not None, "Reactive LLM is not initialized!"
+        sampling_params = self.model1_config.get("inference_parameters", {})
         if self.budget_form == "token":
-            sampling_params = {
-                "max_tokens": self.internal_budget,
-                "temperature": 1,
-                "top_p": 1,
-            }
+            sampling_params["max_tokens"] = min(self.internal_budget, sampling_params.get("max_tokens", 80000))
             text, token_num = self.generate(
-                self.llm1, self.model1, messages, sampling_params
+                self.llm1, 
+                self.model1, 
+                messages, 
+                sampling_params
             )
         else:
-            sampling_params = {"temperature": 1, "top_p": 1, "max_tokens": 8192}
             text, token_num = self.start_reactive_stream(
                 self.llm1,
                 self.model1,
@@ -284,49 +246,35 @@ class BaseAgent:
                     temperature=0,
                     top_p=1,
                 )
-                if (
-                    response.choices[0].message.content.strip()[0]
-                    in self.prompts.ALL_ACTIONS
-                ):
-                    text += response.choices[0].message.content.strip()[0] + "}"
+                if response.choices[0].message.content.strip()[0] in self.prompts.ALL_ACTIONS:
+                    text += response.choices[0].message.content.strip()[0] + '}'
                     break
-            except Exception:
+            except Exception as e:
                 time.sleep(0.2)
             if max_attempt == 0:
-                text += self.prompts.DEFAULT_ACTION + "}"
+                text += self.prompts.DEFAULT_ACTION + '}'
         return text, token_num
 
     def planning_inference(self, messages, budget, game_turn):
         assert self.model2 is not None, "Planning LLM is not initialized!"
         token_num = 0
+        sampling_params = self.model2_config.get("inference_parameters", {})
         if self.budget_form == "token":
             if messages != []:
                 self.gen_turn = game_turn
                 self.gen_accum = -self.internal_budget
-                sampling_params = {
-                    "max_tokens": 80000,
-                    "temperature": 0.6,
-                    "top_p": 0.95,
-                }
-                self.gen_text, self.gen_token_num = self.generate(
-                    self.llm2, self.model2, messages, sampling_params
-                )
+                self.gen_text, self.gen_token_num = self.generate(self.llm2, self.model2, messages, sampling_params)
                 if self.tokenizer is not None:
                     self.gen_token = self.tokenizer.encode(self.gen_text)
                 token_num = self.gen_token_num
             self.gen_accum += budget
-            can_flush = (
-                self.gen_accum >= self.gen_token_num or self.tokenizer is not None
-            )
+            can_flush = self.gen_accum >= self.gen_token_num or self.tokenizer is not None
             if can_flush:
                 self.to_flush_turn = self.gen_turn
                 if self.gen_accum >= self.gen_token_num:
                     self.to_flush = self.gen_text
                 elif self.tokenizer is not None:
-                    self.to_flush = self.tokenizer.decode(
-                        self.gen_token[: self.gen_accum],
-                        skip_special_tokens=True,
-                    )
+                    self.to_flush = self.tokenizer.decode(self.gen_token[:self.gen_accum], skip_special_tokens=True)
             text = self.to_flush
             turn = self.to_flush_turn
             self.to_flush = ""
@@ -334,12 +282,9 @@ class BaseAgent:
             if self.gen_accum + self.internal_budget >= self.gen_token_num:
                 self.gen_text = ""
         else:
-            sampling_params = {"temperature": 0.6, "top_p": 0.95}
             if messages != []:
-                self.gen_turn = game_turn
-                self.start_planning_stream(
-                    self.llm2, self.model2, messages, sampling_params
-                )
+                self.gen_turn = game_turn                
+                self.start_planning_stream(self.llm2, self.model2, messages, sampling_params)
             time.sleep(budget - self.internal_budget)
             new_text, token_num = self.get_planning_chunks()
             self.gen_text += new_text
@@ -348,13 +293,14 @@ class BaseAgent:
             if self.is_planning_finished():
                 self.gen_text = ""
         return text, token_num, turn
-
-
+        
+        
+import re
 def extract_boxed(text, default_value=""):
     """
     Extracts the \boxed{...} text from the input string.
     """
-    pattern = r"oxed{"
+    pattern = r'oxed{' 
     start_index = text.rfind(pattern)
     if start_index == -1:
         # Try to extract content enclosed in triple backticks if \boxed{...} is not found
@@ -366,11 +312,11 @@ def extract_boxed(text, default_value=""):
     start_index += len(pattern) - 1
     stack = []
     for i in range(start_index, len(text)):
-        if text[i] == "{":
-            stack.append("{")
-        elif text[i] == "}":
+        if text[i] == '{':
+            stack.append('{')
+        elif text[i] == '}':
             if stack:
                 stack.pop()
             if not stack:
-                return text[start_index + 1 : i].strip()
-    return default_value if default_value else text[start_index + 1 :].strip()
+                return text[start_index + 1:i].strip()
+    return default_value if default_value else text[start_index + 1:].strip()

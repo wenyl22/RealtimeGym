@@ -127,14 +127,14 @@ def main():
         action = agent.act() or DEFAULT_ACTION
 
         # Environment steps
-        obs, done, reward = env.step(action)
-        total_reward += reward
+        obs, done, reward, reset = env.step(action)
 
+        total_reward = reward
         if step_count % 5 == 0:
             print(f"Step {step_count}: Action={action}, Reward={reward}")
 
     # Show results
-    print("\n4. Game completed!")
+    print("\n4. Simulation Ended!")
     print(f"   Total steps: {step_count}")
     print(f"   Total reward: {total_reward}")
 

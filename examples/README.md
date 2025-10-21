@@ -83,7 +83,7 @@ while not done:
     action = agent.act() or DEFAULT_ACTION
 
     # Environment steps
-    obs, done, reward = env.step(action)
+    obs, done, reward, reset = env.step(action)
 ```
 
 ## Environment IDs
@@ -123,9 +123,10 @@ class MyAgent:
 
 ## Next Steps
 
-1. Start with `basic_usage.py` to understand the fundamentals
+1. Start with `basic_usage.py` to understand the fundamentals. See `basic_renderer.py` to understand how to automatically get visualization for game trajectory.
 2. Explore `all_environments.py` to see environment differences
 3. Study `custom_agent.py` to learn advanced agent patterns
 4. Test `difficulty_levels.py` to understand difficulty scaling
 
 For more information, see the main [README.md](../README.md) and [CONTRIBUTING.md](../CONTRIBUTING.md).
+

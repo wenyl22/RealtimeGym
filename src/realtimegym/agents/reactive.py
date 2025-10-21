@@ -9,27 +9,21 @@ class ReactiveAgent(BaseAgent):
         prompts,
         file,
         budget_form,
-        port1,
-        port2,
-        api_key,
+        model1_config,
+        model2_config,
         internal_budget,
         **kwargs,
     ):
         super().__init__(
-            prompts, file, budget_form, port1, port2, api_key, internal_budget
+            prompts, file, budget_form, model1_config, model2_config, internal_budget
         )
-        self.model1 = kwargs.get("model1", None)
 
     def truncate_logs(self):
         return
 
     def think(self, timeout=None):
-        """Process observation and generate action with given timeout."""
-        if self.current_observation is None:
-            self.action = self.prompts.DEFAULT_ACTION
-            return
-
-        budget = timeout if timeout is not None else self.internal_budget
+        assert self.current_observation is not None and timeout is not None
+        budget = timeout
         observation = self.current_observation
 
         messages = [
