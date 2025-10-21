@@ -136,7 +136,10 @@ class OvercookedEnv(BaseEnv):
         self.reward = 0
         self.game_turn = 0
         self.terminal = False
-        self.history = [[], []]  # history[0] for player 0, history[1] for player 1
+        self.history = [
+            [],
+            [],
+        ]  # history[0] for player 0, history[1] for player 1
 
         # self.eval_env_infos = defaultdict(list)
         # Return initial observation and done flag
@@ -158,7 +161,15 @@ class OvercookedEnv(BaseEnv):
         else:
             action = Action.STAY
         self.gym_env.script_agent[0].next_action = action
-        eval_ob, eval_share_ob, eval_reward, eval_done, eval_info, eval_available_action, joint_action = self.gym_env.step([[0], [0]])
+        (
+            eval_ob,
+            eval_share_ob,
+            eval_reward,
+            eval_done,
+            eval_info,
+            eval_available_action,
+            joint_action,
+        ) = self.gym_env.step([[0], [0]])
         self.reward += sum(eval_reward[0])
         self.terminal = eval_done[0]
         self.history[0].append(Action.A_TO_CHAR[joint_action[0]])
@@ -172,7 +183,7 @@ class OvercookedEnv(BaseEnv):
 
     def state_string(self):
         ret = self.gym_env.base_mdp.state_string(self.gym_env.base_env.state)
-        ret = ret.split('\n')
+        ret = ret.split("\n")
         ret = ret[::-1]
         ret = "\n".join(ret)
         ret = ret.replace("↑", "x").replace("↓", "y")
@@ -195,13 +206,16 @@ class OvercookedEnv(BaseEnv):
         all_order_info = self.gym_env.base_env.state.all_order_info()
         terrain = self.gym_env.base_mdp.terrain_pos_dict
         state_for_llm = {
-            "history": self.history if len(self.history[0]) <= 5 else [self.history[0][-5:], self.history[1][-5:]],
+            "history": self.history
+            if len(self.history[0]) <= 5
+            else [self.history[0][-5:], self.history[1][-5:]],
             "game_turn": self.game_turn,
             "state": state,
             "all_orders": all_order_info,
             "layout": terrain,
         }
         return state_for_llm
+
     def observe(self):
         state_for_llm = self.llm_state_builder()
         kitchen_counters = state_for_llm["layout"]["X"]
@@ -229,7 +243,7 @@ class OvercookedEnv(BaseEnv):
             text_recipe_infos += f"Recipe {i + 1}: {num_onions} onions, {num_tomatoes} tomatoes; reward: {reward}; time to cook: {time} turns\n"
         position = [0, 0]
         orientation = [0, 0]
-        held_object = [0, 0]
+        held_object: list = [0, 0]
         history = [0, 0]
         for i in range(2):
             player = state_for_llm["state"]["players"][i]
@@ -241,7 +255,7 @@ class OvercookedEnv(BaseEnv):
             else:
                 history[i] = "No action history"
             if held_object[i] is not None:
-                held_object[i] = "one " + held_object[i]["name"]
+                held_object[i] = "one " + held_object[i]["name"]  # type: ignore
                 if held_object[i] == "dish":
                     held_object[i] = "clean plate"
                 elif held_object[i] == "soup":

@@ -31,7 +31,6 @@ class PlanningAgent(BaseAgent):
             self.logs[col] = self.logs[col][:final_step]
 
     def think(self, timeout=None):
-
         assert timeout is not None and self.current_observation is not None
         budget = timeout
 

@@ -1,5 +1,5 @@
 model: deepseek-reasoner
-url: https://api.deepseek.com 
+url: https://api.deepseek.com
 api_key: Your API Key Here
 inference_parameters:
   temperature: 0.6

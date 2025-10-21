@@ -83,9 +83,15 @@ def main():
 
     # Test each environment
     environments = [
-        "Freeway-v0", "Snake-v0", "Overcooked-v0", \
-        "Freeway-v1", "Snake-v1", "Overcooked-v1", \
-        "Freeway-v2", "Snake-v2", "Overcooked-v2",
+        "Freeway-v0",
+        "Snake-v0",
+        "Overcooked-v0",
+        "Freeway-v1",
+        "Snake-v1",
+        "Overcooked-v1",
+        "Freeway-v2",
+        "Snake-v2",
+        "Overcooked-v2",
     ]
 
     for env_id in environments:

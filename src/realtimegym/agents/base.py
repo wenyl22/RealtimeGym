@@ -1,17 +1,25 @@
-from collections import defaultdict
-from openai import OpenAI
-from typing import List, Dict
-import time
-import pandas as pd
 import queue
+import re
 import threading
+import time
+from collections import defaultdict
+from typing import Dict, List
+
+import pandas as pd
 import yaml
+from openai import OpenAI
 from transformers import AutoTokenizer
 
 
 class BaseAgent:
     def __init__(
-        self, prompts, file, budget_form, model1_config, model2_config, internal_budget
+        self,
+        prompts,
+        file,
+        budget_form,
+        model1_config,
+        model2_config,
+        internal_budget,
     ):
         self.prompts = prompts
         self.file = file
@@ -20,17 +28,25 @@ class BaseAgent:
         self.model2 = None
         self.tokenizer = None
         if model1_config is not None:
-            with open(model1_config, 'r') as f:
+            with open(model1_config, "r") as f:
                 self.model1_config = yaml.safe_load(f)
-            self.llm1 = OpenAI(api_key=self.model1_config["api_key"], base_url=self.model1_config["url"])
+            self.llm1 = OpenAI(
+                api_key=self.model1_config["api_key"],
+                base_url=self.model1_config["url"],
+            )
             self.model1 = self.model1_config["model"]
         if model2_config is not None:
-            with open(model2_config, 'r') as f:
+            with open(model2_config, "r") as f:
                 self.model2_config = yaml.safe_load(f)
-            self.llm2 = OpenAI(api_key=self.model2_config["api_key"], base_url=self.model2_config["url"])
+            self.llm2 = OpenAI(
+                api_key=self.model2_config["api_key"],
+                base_url=self.model2_config["url"],
+            )
             self.model2 = self.model2_config["model"]
             if "tokenizer" in self.model2_config:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model2_config["tokenizer"])
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model2_config["tokenizer"]
+                )
         self.internal_budget = internal_budget
 
         self.logs = defaultdict(list)
@@ -213,12 +229,11 @@ class BaseAgent:
         assert self.model1 is not None, "Reactive LLM is not initialized!"
         sampling_params = self.model1_config.get("inference_parameters", {})
         if self.budget_form == "token":
-            sampling_params["max_tokens"] = min(self.internal_budget, sampling_params.get("max_tokens", 80000))
+            sampling_params["max_tokens"] = min(
+                self.internal_budget, sampling_params.get("max_tokens", 80000)
+            )
             text, token_num = self.generate(
-                self.llm1, 
-                self.model1, 
-                messages, 
-                sampling_params
+                self.llm1, self.model1, messages, sampling_params
             )
         else:
             text, token_num = self.start_reactive_stream(
@@ -246,13 +261,16 @@ class BaseAgent:
                     temperature=0,
                     top_p=1,
                 )
-                if response.choices[0].message.content.strip()[0] in self.prompts.ALL_ACTIONS:
-                    text += response.choices[0].message.content.strip()[0] + '}'
+                if (
+                    response.choices[0].message.content.strip()[0]
+                    in self.prompts.ALL_ACTIONS
+                ):
+                    text += response.choices[0].message.content.strip()[0] + "}"
                     break
-            except Exception as e:
+            except Exception:
                 time.sleep(0.2)
             if max_attempt == 0:
-                text += self.prompts.DEFAULT_ACTION + '}'
+                text += self.prompts.DEFAULT_ACTION + "}"
         return text, token_num
 
     def planning_inference(self, messages, budget, game_turn):
@@ -263,18 +281,25 @@ class BaseAgent:
             if messages != []:
                 self.gen_turn = game_turn
                 self.gen_accum = -self.internal_budget
-                self.gen_text, self.gen_token_num = self.generate(self.llm2, self.model2, messages, sampling_params)
+                self.gen_text, self.gen_token_num = self.generate(
+                    self.llm2, self.model2, messages, sampling_params
+                )
                 if self.tokenizer is not None:
                     self.gen_token = self.tokenizer.encode(self.gen_text)
                 token_num = self.gen_token_num
             self.gen_accum += budget
-            can_flush = self.gen_accum >= self.gen_token_num or self.tokenizer is not None
+            can_flush = (
+                self.gen_accum >= self.gen_token_num or self.tokenizer is not None
+            )
             if can_flush:
                 self.to_flush_turn = self.gen_turn
                 if self.gen_accum >= self.gen_token_num:
                     self.to_flush = self.gen_text
                 elif self.tokenizer is not None:
-                    self.to_flush = self.tokenizer.decode(self.gen_token[:self.gen_accum], skip_special_tokens=True)
+                    self.to_flush = self.tokenizer.decode(
+                        self.gen_token[: self.gen_accum],
+                        skip_special_tokens=True,
+                    )
             text = self.to_flush
             turn = self.to_flush_turn
             self.to_flush = ""
@@ -283,8 +308,10 @@ class BaseAgent:
                 self.gen_text = ""
         else:
             if messages != []:
-                self.gen_turn = game_turn                
-                self.start_planning_stream(self.llm2, self.model2, messages, sampling_params)
+                self.gen_turn = game_turn
+                self.start_planning_stream(
+                    self.llm2, self.model2, messages, sampling_params
+                )
             time.sleep(budget - self.internal_budget)
             new_text, token_num = self.get_planning_chunks()
             self.gen_text += new_text
@@ -293,14 +320,13 @@ class BaseAgent:
             if self.is_planning_finished():
                 self.gen_text = ""
         return text, token_num, turn
-        
-        
-import re
+
+
 def extract_boxed(text, default_value=""):
     """
     Extracts the \boxed{...} text from the input string.
     """
-    pattern = r'oxed{' 
+    pattern = r"oxed{"
     start_index = text.rfind(pattern)
     if start_index == -1:
         # Try to extract content enclosed in triple backticks if \boxed{...} is not found
@@ -312,11 +338,11 @@ def extract_boxed(text, default_value=""):
     start_index += len(pattern) - 1
     stack = []
     for i in range(start_index, len(text)):
-        if text[i] == '{':
-            stack.append('{')
-        elif text[i] == '}':
+        if text[i] == "{":
+            stack.append("{")
+        elif text[i] == "}":
             if stack:
                 stack.pop()
             if not stack:
-                return text[start_index + 1:i].strip()
-    return default_value if default_value else text[start_index + 1:].strip()
+                return text[start_index + 1 : i].strip()
+    return default_value if default_value else text[start_index + 1 :].strip()

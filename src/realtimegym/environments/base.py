@@ -48,9 +48,11 @@ class BaseEnv:
     def act(self, a):
         """
         Legacy method. Use step() instead.
- 
+
         """
-        raise NotImplementedError("This method has been deprecated. Use step() instead.")
+        raise NotImplementedError(
+            "This method has been deprecated. Use step() instead."
+        )
 
     def observe(self):
         """

@@ -1,15 +1,13 @@
 import argparse
 import os
-import sys
-
-import pandas as pd
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from importlib import import_module
-from typing import Any
 
+import pandas as pd
 import pygame
 from PIL import Image
+
 import realtimegym
 from realtimegym.agents.agile import AgileThinker
 from realtimegym.agents.planning import PlanningAgent
@@ -31,9 +29,17 @@ def game_loop(file, raw_seed, args):
     # env, seed, render = env_m.setup_env(  # type: ignore
     #     raw_seed, args.cognitive_load, args.save_trajectory_gifs
     # )
-    version = "0" if args.cognitive_load == "E" else "1" if args.cognitive_load == "M" else "2"
+    version = (
+        "0"
+        if args.cognitive_load == "E"
+        else "1"
+        if args.cognitive_load == "M"
+        else "2"
+    )
     env, seed, render = realtimegym.make(
-        f"{args.game.capitalize()}-v{version}", seed=raw_seed, render=args.save_trajectory_gifs
+        f"{args.game.capitalize()}-v{version}",
+        seed=raw_seed,
+        render=args.save_trajectory_gifs,
     )
     agent = None
     params = {
@@ -70,6 +76,7 @@ def game_loop(file, raw_seed, args):
             }
             return ret
         else:
+            env_m = import_module("realtimegym.environments." + args.game)
             env, seed, render = env_m.setup_env(  # type: ignore
                 raw_seed, args.cognitive_load, args.save_trajectory_gifs
             )
@@ -118,12 +125,8 @@ def main():
     args = argparse.ArgumentParser(
         description="Real-time reasoning gym configurations."
     )
-    args.add_argument(
-        '--planning-model-config', type=str, default=None
-    )
-    args.add_argument(
-        '--reactive-model-config', type=str, default=None
-    )
+    args.add_argument("--planning-model-config", type=str, default=None)
+    args.add_argument("--reactive-model-config", type=str, default=None)
     args.add_argument(
         "--game",
         type=str,
@@ -152,9 +155,7 @@ def main():
     instance = []
     for setting in args.settings:
         new_args = argparse.Namespace(**vars(args))
-        game, cognitive_load, time_pressure, mode, internal_budget = setting.split(
-            "_"
-        )
+        game, cognitive_load, time_pressure, mode, internal_budget = setting.split("_")
         new_args.game = game
         new_args.cognitive_load = cognitive_load
         new_args.time_pressure = int(time_pressure)

@@ -34,7 +34,7 @@ while not done:
     agent.observe(obs)
     agent.think(timeout=8192)
     action = agent.act() or "S"
-    obs, done, reward, reset = env.step(action) 
+    obs, done, reward, reset = env.step(action)
     total_reward = reward # Pay attention that reward here is not accumulative
 
 print(f"Final reward: {reward}")

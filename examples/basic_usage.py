@@ -85,7 +85,7 @@ def main():
 
         print(f"  Reward: {reward}, Done: {done}, Reset: {reset}")
 
-    print(f"\n4. Simulation Ended:")
+    print("\n4. Simulation Ended:")
     print(f"   Total steps: {step_count}")
     print(f"   Current reward: {total_reward}")
     print(f"   Game completed: {done}")

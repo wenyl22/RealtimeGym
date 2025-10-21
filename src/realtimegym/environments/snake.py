@@ -208,10 +208,14 @@ class SnakeEnv(BaseEnv):
         description += f"\t - Internal Obstacles: {state_for_llm['internal_obstacles'] if len(state_for_llm['internal_obstacles']) > 0 else 'No internal obstacles'}\n"
         description += f"**Snake Positions**:{state_for_llm['snake']}\n**Snake Head Direction**: {state_for_llm['snake_dir']}\n"
         description += "**Food Positions, Life Span and Value**:\n"
-        for (x, y, life_span, value) in state_for_llm["foods"]:
+        for x, y, life_span, value in state_for_llm["foods"]:
             description += f"\t- ({x}, {y}, {life_span}, {value})\n"
-        model1_description = f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
-        model2_description = f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+        model1_description = (
+            f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
+        )
+        model2_description = (
+            f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+        )
         return {
             "model1_description": model1_description,
             "model2_description": model2_description,

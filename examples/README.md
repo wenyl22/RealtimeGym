@@ -129,4 +129,3 @@ class MyAgent:
 4. Test `difficulty_levels.py` to understand difficulty scaling
 
 For more information, see the main [README.md](../README.md) and [CONTRIBUTING.md](../CONTRIBUTING.md).
-

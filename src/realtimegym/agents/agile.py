@@ -1,6 +1,5 @@
 import re
 
-from transformers import AutoTokenizer
 
 from .base import BaseAgent, extract_boxed
 
@@ -69,4 +68,3 @@ class AgileThinker(BaseAgent):
             self.logs["model1_prompt"].append(prompt)
             self.logs["model1_response"].append(text)
         self.logs["model1_token_num"].append(token_num)
-

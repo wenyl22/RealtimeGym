@@ -88,7 +88,7 @@ def main():
 
         print(f"  Reward: {reward}, Done: {done}, Reset: {reset}")
 
-    print(f"\n4. Simulation Ended:")
+    print("\n4. Simulation Ended:")
     print(f"   Total steps: {step_count}")
     print(f"   Current reward: {total_reward}")
     print(f"   Game completed: {done}")
@@ -96,9 +96,7 @@ def main():
     print("\n5. Rendering the game trajectory...")
     gif_path = "examples/game_trajectory.gif"
     images = [pygame.surfarray.array3d(surface) for surface in surfaces]
-    pil_images = [
-        Image.fromarray(images[i].swapaxes(0, 1)) for i in range(len(images))
-    ]
+    pil_images = [Image.fromarray(images[i].swapaxes(0, 1)) for i in range(len(images))]
     pil_images[0].save(
         gif_path,
         save_all=True,
@@ -106,6 +104,7 @@ def main():
         duration=1000,
         loop=0,
     )
+
 
 if __name__ == "__main__":
     main()
