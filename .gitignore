@@ -17,3 +17,4 @@ __pycache__
 *.err
 *.png
 configs/deepseek*
+!assets/*.png

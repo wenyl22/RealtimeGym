@@ -1,77 +1,71 @@
-# ⚡ Real-Time Reasoning Gym
+# ⚡🧠🏋️ `realtimegym`
 
-**A gym for evaluating language agents in real-time environments with time constraints.**
+A learning and evaluation environment for language agents reasoning in real-time.
 
-RealtimeGym provides a simple, unified interface for testing how AI agents perform when they have limited time to think and act. Perfect for evaluating LLMs in dynamic, time-pressured scenarios.
-
-## Quick Start
+In typical OpenAI Gym environments, you have an agent loop like this:
 
 ```python
-import realtimegym
-
-# Create environment
-env, seed, renderer = realtimegym.make('Freeway-v0', seed=0, render=False)
-
-# Simple agent
-class SimpleAgent:
-    def __init__(self):
-        self.observation = None
-
-    def observe(self, obs):
-        self.observation = obs
-
-    def think(self, timeout=None):
-        pass  # Your thinking logic here
-
-    def act(self):
-        return "U"  # Move up
-
-# Run game loop
-agent = SimpleAgent()
 obs, done = env.reset()
-total_reward = 0
+
+while not done:
+    action = agent.act(obs)
+    obs, reward, done, info = env.step(action)
+```
+
+The time taken in `agent.act(obs)` is unbounded, and language agents could generate very long reasoning,
+which takes several seconds or even minutes. This is not suitable for real-time scenarios.
+
+In `realtimegym`, we introduce a suite of real-time tasks and a new interface with explicit time or token budget constraints:
+
+```python
+obs, done = env.reset()
+
 while not done:
     agent.observe(obs)
     agent.think(timeout=8192)
     action = agent.act() or "S"
     obs, done, reward, reset = env.step(action)
     total_reward = reward # Pay attention that reward here is not accumulative
-
-print(f"Final reward: {reward}")
 ```
 
-## Installation
+Both `observe` and `act` are non-blocking fast calls, while `think` is where the agent can take time to reason within the given `timeout` budget.
+The stateful design allows agents to maintain internal thinking processes across multiple steps.
 
-```bash
-pip install -e .
-```
 
-For development (includes testing, linting, type checking):
-```bash
-pip install -e ".[dev]"
-```
+## Task Suite
 
-## Environments
+`realtimegym` includes three games with real-time constraints:
 
-RealtimeGym includes three classic games with real-time constraints:
-
-| Environment | Description | Actions | Difficulty Levels |
+| Game | Description | Actions | Difficulty Levels |
 |------------|-------------|---------|-------------------|
 | **Freeway** | Cross the road avoiding cars | `U` (up), `D` (down), `S` (stay) | v0 (Easy), v1 (Medium), v2 (Hard) |
-| **Snake** | Classic snake game | `U`, `D`, `L` (left), `R` (right), `S` | v0, v1, v2 |
+| **Snake** | Greedy snake game | `U`, `D`, `L` (left), `R` (right), `S` | v0, v1, v2 |
 | **Overcooked** | Cooperative cooking | `U`, `D`, `L`, `R`, `I` (interact), `S` | v0, v1, v2 |
 
+To create an task in our provided suite, use the `realtimegym.make()` function:
 ```python
 # Create any environment with difficulty level
 env, seed, renderer = realtimegym.make('Snake-v2', seed=0, render=False)
 ```
+
+## The challenge of Real-Time Reasoning
+
+Real-time reasoning requires agents to not only produce correct actions, but also make the timely decision.
+The following figure shows the benchmark results of different LLM-based agents under various time budgets in the
+three tasks that we provide.
+
+![Fig. 1](assets/fig1.png)
+
+
 
 ## The Agent Interface
 
 Every agent must implement three methods:
 
 ```python
-class MyAgent:
+from realtimegym.agents.base import BaseAgent
+
+class MyAgent(BaseAgent):
     def observe(self, observation: dict):
         """
         Receive observation from environment.
@@ -113,9 +107,7 @@ RealtimeGym includes following built-in LLM agents:
 | **AgileThinker** | Hybrid approach | Combination of Above | Models with transparent thinking tokens
 
 
-You can evaluate them via cli-command
-
-### Command Line
+You can evaluate these agents and large language models via cli-command `agile_eval`:
 
 ```bash
 agile_eval --budget_format token \
@@ -222,28 +214,22 @@ pytest
 
 ## Development
 
+Make sure to use `uv` and `pre-commit`:
+
 ### Pre-commit Hooks
 
 ```bash
 # Install hooks
-pre-commit install
-
-# Run manually
-pre-commit run --all-files
+uv run pre-commit install
 ```
 
-### Code Quality Tools
+### Static Typing
 
 ```bash
-# Linting
-ruff check
-
-# Formatting
-ruff format
-
 # Type checking
 ty check
 ```
+
 ## Project Structure
 
 ```
