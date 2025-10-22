@@ -1,5 +1,5 @@
 model: gpt-5-mini
-api_key: Your API Key Here
+api_key: ${OPENAI_API_KEY} # Set this in .env file or environment
 inference_parameters:
   max_tokens: 8192
   reasoning_effort: low
