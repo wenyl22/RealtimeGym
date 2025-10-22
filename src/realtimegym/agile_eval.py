@@ -1,25 +1,28 @@
 import argparse
+import importlib
+import importlib.util
 import os
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import importlib
-import sys
+
 import pandas as pd
 import pygame
+import yaml
 from PIL import Image
 
 import realtimegym
 from realtimegym.agents.agile import AgileThinker
 from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.reactive import ReactiveAgent
-import yaml
+
 
 def _load_prompt_module(specifier: str):
     """
     Load prompt module from:
-      - file path (relative or absolute), e.g. "configs/prompts/freeway.py" or "configs/prompts/freeway"
+      - dotted module name (recommended), e.g. "realtimegym.prompts.freeway"
+      - file path (backward compatibility), e.g. "configs/prompts/freeway.py"
       - path-like with slashes, e.g. "configs/prompts/freeway"
-      - dotted module name, e.g. "configs.prompts.freeway"
     Returns imported module.
     """
     project_root = os.getcwd()
@@ -34,12 +37,16 @@ def _load_prompt_module(specifier: str):
         if os.path.exists(p) and os.path.isfile(p):
             name = "realtimegym._prompt_" + os.path.splitext(os.path.basename(p))[0]
             spec = importlib.util.spec_from_file_location(name, p)
+            if spec is None:
+                continue
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)  # type: ignore
             return module
 
     # 2) Try convert slashes to dots and import as module
-    modname = specifier.replace("/", ".").rstrip(".py")
+    modname = specifier.replace("/", ".")
+    if modname.endswith(".py"):
+        modname = modname[:-3]
     # ensure project root on sys.path so 'configs' can be found if it's not a package
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
@@ -48,9 +55,10 @@ def _load_prompt_module(specifier: str):
     except Exception as e:
         raise ImportError(
             f"Cannot load prompt module '{specifier}' as path or module ({e}). "
-            "If it's a file, pass its path (e.g. configs/prompts/freeway.py); "
-            "or make configs a package, or ensure project root is correct."
+            "Recommended: use module name (e.g. realtimegym.prompts.freeway). "
+            "For backward compatibility, file paths are also supported (e.g. configs/prompts/freeway.py)."
         )
+
 
 def check_args(args):
     if args.mode == "planning":
@@ -70,7 +78,7 @@ def game_loop(file, raw_seed, args):
         if args.cognitive_load == "M"
         else "2"
     )
-    
+
     env, seed, render = realtimegym.make(
         f"{args.game.capitalize()}-v{version}",
         seed=raw_seed,
@@ -88,16 +96,16 @@ def game_loop(file, raw_seed, args):
 
     if args.mode != "reactive":
         params["model2_config"] = args.planning_model_config
-    
+
     if args.mode != "planning":
         params["model1_config"] = args.reactive_model_config
         params["internal_budget"] = args.internal_budget
-    
+
     if args.mode == "planning":
         params["skip_action"] = True
         if args.game == "overcooked":
             params["skip_action"] = False
-    
+
     if args.mode == "reactive":
         agent = ReactiveAgent(**params)  # type: ignore
     elif args.mode == "planning":
@@ -106,7 +114,7 @@ def game_loop(file, raw_seed, args):
         agent = AgileThinker(**params)  # type: ignore
     else:
         raise NotImplementedError("mode not recognized.")
-    
+
     if args.checkpoint is not None:  # resume from checkpoint
         checkpoint_file = file.replace(args.log_dir, args.checkpoint)
         df = pd.read_csv(checkpoint_file)
@@ -174,7 +182,9 @@ def main():
     )
     args.add_argument("--planning-model-config", type=str, default=None)
     args.add_argument("--reactive-model-config", type=str, default=None)
-    args.add_argument("--prompt-config", type=str, default="configs/example-prompts.yaml")
+    args.add_argument(
+        "--prompt-config", type=str, default="configs/example-prompts.yaml"
+    )
     args.add_argument(
         "--game",
         type=str,
