@@ -190,7 +190,7 @@ class OvercookedEnv(BaseEnv):
         ret = ret.replace("x", "↓").replace("y", "↑")
         return ret
 
-    def llm_state_builder(self):
+    def state_builder(self):
         """
         "players": [p.to_dict() for p in self.players]
             - position, orientation, held_object
@@ -205,7 +205,7 @@ class OvercookedEnv(BaseEnv):
         # --- Layout Information --- #
         all_order_info = self.gym_env.base_env.state.all_order_info()
         terrain = self.gym_env.base_mdp.terrain_pos_dict
-        state_for_llm = {
+        state = {
             "history": self.history
             if len(self.history[0]) <= 5
             else [self.history[0][-5:], self.history[1][-5:]],
@@ -214,148 +214,154 @@ class OvercookedEnv(BaseEnv):
             "all_orders": all_order_info,
             "layout": terrain,
         }
-        return state_for_llm
+        return state
 
     def observe(self):
-        state_for_llm = self.llm_state_builder()
-        kitchen_counters = state_for_llm["layout"]["X"]
-        tomatoes = state_for_llm["layout"]["T"]
-        onions = state_for_llm["layout"]["O"]
-        plates = state_for_llm["layout"]["D"]
-        pots = state_for_llm["layout"]["P"]
-        serving_counters = state_for_llm["layout"]["S"]
-        recipe_infos = state_for_llm["all_orders"]
-        text_recipe_infos = ""
-        for i, recipe in enumerate(recipe_infos):
-            ingredients = recipe["ingredients"]
-            num_onions = len(
-                [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
-            )
-            num_tomatoes = len(
-                [
-                    ingredient
-                    for ingredient in ingredients
-                    if ingredient == Recipe.TOMATO
-                ]
-            )
-            reward = recipe["value"]
-            time = recipe["time"]
-            text_recipe_infos += f"Recipe {i + 1}: {num_onions} onions, {num_tomatoes} tomatoes; reward: {reward}; time to cook: {time} turns\n"
-        position = [0, 0]
-        orientation = [0, 0]
-        held_object: list = [0, 0]
-        history = [0, 0]
-        for i in range(2):
-            player = state_for_llm["state"]["players"][i]
-            position[i] = player["position"]
-            orientation[i] = orientation_to_char_mapping[player["orientation"]]
-            held_object[i] = deepcopy(player["held_object"])
-            if len(state_for_llm["history"][i]) > 0:
-                history[i] = ", ".join(state_for_llm["history"][i])
-            else:
-                history[i] = "No action history"
-            if held_object[i] is not None:
-                held_object[i] = "one " + held_object[i]["name"]  # type: ignore
-                if held_object[i] == "dish":
-                    held_object[i] = "clean plate"
-                elif held_object[i] == "soup":
-                    held_object[i] = "soup in plate"
-            else:
-                held_object[i] = "nothing"
-        pot_state = {}
-        kitchen_counter_state = {}
-        for soup in state_for_llm["state"]["objects"]:
-            pot_id = soup["position"]
-            if pot_id in kitchen_counters:
-                kitchen_counter_state[pot_id] = (
-                    f"Kitchen Counter on {pot_id}: contains a {soup['name'].replace('dish', 'clean plate')}; "
-                )
-                continue
-            if pot_id not in pots:
-                assert pot_id in position, f"{pot_id} not in a valid spot"
-                continue
-            assert soup["name"] == "soup", f"Object {soup['name']} is not a soup."
-            ingredients = soup["_ingredients"]
-            assert (
-                sum([ingredient["position"] != pot_id for ingredient in ingredients])
-                == 0
-            ), f"No ingredients found in pot {pot_id}."
-            ingredients = [ingredient["name"] for ingredient in ingredients]
-            num_onions = len(
-                [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
-            )
-            num_tomatoes = len(
-                [
-                    ingredient
-                    for ingredient in ingredients
-                    if ingredient == Recipe.TOMATO
-                ]
-            )
-            if len(ingredients) == 0:
-                ingredients = "nothing"
-            else:
-                ingredients = f"{num_onions} onions and {num_tomatoes} tomatoes"
-            if soup["is_idle"]:
-                state = "Pot is not full thus cooking hasn't started yet."
-            elif soup["is_cooking"]:
-                state = f"Cooked for {soup['cooking_tick']} turns, still need {soup['cook_time'] - soup['cooking_tick']} turns to finish."
-            elif soup["is_ready"]:
-                state = "Ready to serve."
-            pot_state[pot_id] = f"Pot on {pot_id}: contains {ingredients}; {state}"
-        text_kitchen_counter_state = "\n".join(kitchen_counter_state.values())
-        if text_kitchen_counter_state == "":
-            text_kitchen_counter_state = "All kitchen counters are empty."
-        text_pot_state = "\n".join(pot_state.values())
-        if text_pot_state == "":
-            text_pot_state = "All pots are empty."
-        game_turn = state_for_llm["game_turn"]
-
-        model1_description = GAME_STATE_PROMPT.format(
-            kitchen_counter=kitchen_counters,
-            tomato=tomatoes if len(tomatoes) > 0 else "No tomato dispensers",
-            onion=onions,
-            plate=plates,
-            pot=pots,
-            serving_counter=serving_counters,
-            recipe_infos=text_recipe_infos,
-            t_format=f"t_0 = {game_turn}",
-            my_position=position[0],
-            my_orientation=orientation[0],
-            my_holding=held_object[0],
-            my_action_history=history[0],
-            he_position=position[1],
-            he_orientation=orientation[1],
-            he_holding=held_object[1],
-            he_action_history=history[1],
-            kitchen_counter_state=text_kitchen_counter_state,
-            pot_state=text_pot_state,
-        )
-        model2_description = GAME_STATE_PROMPT.format(
-            kitchen_counter=kitchen_counters,
-            tomato=tomatoes if len(tomatoes) > 0 else "No tomato dispensers",
-            onion=onions,
-            plate=plates,
-            pot=pots,
-            serving_counter=serving_counters,
-            recipe_infos=text_recipe_infos,
-            t_format=f"t_1 = {game_turn}",
-            my_position=position[0],
-            my_orientation=orientation[0],
-            my_holding=held_object[0],
-            my_action_history=history[0],
-            he_position=position[1],
-            he_orientation=orientation[1],
-            he_holding=held_object[1],
-            he_action_history=history[1],
-            kitchen_counter_state=text_kitchen_counter_state,
-            pot_state=text_pot_state,
-        )
+        if self.terminal:
+            return {}
         return {
-            "model1_description": model1_description,
-            "model2_description": model2_description,
-            "game_turn": self.game_turn,
             "state_string": self.state_string(),
+            "game_turn": self.game_turn,
+            "state": self.state_builder(),
         }
+        # kitchen_counters = state_for_llm["layout"]["X"]
+        # tomatoes = state_for_llm["layout"]["T"]
+        # onions = state_for_llm["layout"]["O"]
+        # plates = state_for_llm["layout"]["D"]
+        # pots = state_for_llm["layout"]["P"]
+        # serving_counters = state_for_llm["layout"]["S"]
+        # recipe_infos = state_for_llm["all_orders"]
+        # text_recipe_infos = ""
+        # for i, recipe in enumerate(recipe_infos):
+        #     ingredients = recipe["ingredients"]
+        #     num_onions = len(
+        #         [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
+        #     )
+        #     num_tomatoes = len(
+        #         [
+        #             ingredient
+        #             for ingredient in ingredients
+        #             if ingredient == Recipe.TOMATO
+        #         ]
+        #     )
+        #     reward = recipe["value"]
+        #     time = recipe["time"]
+        #     text_recipe_infos += f"Recipe {i + 1}: {num_onions} onions, {num_tomatoes} tomatoes; reward: {reward}; time to cook: {time} turns\n"
+        # position = [0, 0]
+        # orientation = [0, 0]
+        # held_object: list = [0, 0]
+        # history = [0, 0]
+        # for i in range(2):
+        #     player = state_for_llm["state"]["players"][i]
+        #     position[i] = player["position"]
+        #     orientation[i] = orientation_to_char_mapping[player["orientation"]]
+        #     held_object[i] = deepcopy(player["held_object"])
+        #     if len(state_for_llm["history"][i]) > 0:
+        #         history[i] = ", ".join(state_for_llm["history"][i])
+        #     else:
+        #         history[i] = "No action history"
+        #     if held_object[i] is not None:
+        #         held_object[i] = "one " + held_object[i]["name"]  # type: ignore
+        #         if held_object[i] == "dish":
+        #             held_object[i] = "clean plate"
+        #         elif held_object[i] == "soup":
+        #             held_object[i] = "soup in plate"
+        #     else:
+        #         held_object[i] = "nothing"
+        # pot_state = {}
+        # kitchen_counter_state = {}
+        # for soup in state_for_llm["state"]["objects"]:
+        #     pot_id = soup["position"]
+        #     if pot_id in kitchen_counters:
+        #         kitchen_counter_state[pot_id] = (
+        #             f"Kitchen Counter on {pot_id}: contains a {soup['name'].replace('dish', 'clean plate')}; "
+        #         )
+        #         continue
+        #     if pot_id not in pots:
+        #         assert pot_id in position, f"{pot_id} not in a valid spot"
+        #         continue
+        #     assert soup["name"] == "soup", f"Object {soup['name']} is not a soup."
+        #     ingredients = soup["_ingredients"]
+        #     assert (
+        #         sum([ingredient["position"] != pot_id for ingredient in ingredients])
+        #         == 0
+        #     ), f"No ingredients found in pot {pot_id}."
+        #     ingredients = [ingredient["name"] for ingredient in ingredients]
+        #     num_onions = len(
+        #         [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
+        #     )
+        #     num_tomatoes = len(
+        #         [
+        #             ingredient
+        #             for ingredient in ingredients
+        #             if ingredient == Recipe.TOMATO
+        #         ]
+        #     )
+        #     if len(ingredients) == 0:
+        #         ingredients = "nothing"
+        #     else:
+        #         ingredients = f"{num_onions} onions and {num_tomatoes} tomatoes"
+        #     if soup["is_idle"]:
+        #         state = "Pot is not full thus cooking hasn't started yet."
+        #     elif soup["is_cooking"]:
+        #         state = f"Cooked for {soup['cooking_tick']} turns, still need {soup['cook_time'] - soup['cooking_tick']} turns to finish."
+        #     elif soup["is_ready"]:
+        #         state = "Ready to serve."
+        #     pot_state[pot_id] = f"Pot on {pot_id}: contains {ingredients}; {state}"
+        # text_kitchen_counter_state = "\n".join(kitchen_counter_state.values())
+        # if text_kitchen_counter_state == "":
+        #     text_kitchen_counter_state = "All kitchen counters are empty."
+        # text_pot_state = "\n".join(pot_state.values())
+        # if text_pot_state == "":
+        #     text_pot_state = "All pots are empty."
+        # game_turn = state_for_llm["game_turn"]
+
+        # model1_description = GAME_STATE_PROMPT.format(
+        #     kitchen_counter=kitchen_counters,
+        #     tomato=tomatoes if len(tomatoes) > 0 else "No tomato dispensers",
+        #     onion=onions,
+        #     plate=plates,
+        #     pot=pots,
+        #     serving_counter=serving_counters,
+        #     recipe_infos=text_recipe_infos,
+        #     t_format=f"t_0 = {game_turn}",
+        #     my_position=position[0],
+        #     my_orientation=orientation[0],
+        #     my_holding=held_object[0],
+        #     my_action_history=history[0],
+        #     he_position=position[1],
+        #     he_orientation=orientation[1],
+        #     he_holding=held_object[1],
+        #     he_action_history=history[1],
+        #     kitchen_counter_state=text_kitchen_counter_state,
+        #     pot_state=text_pot_state,
+        # )
+        # model2_description = GAME_STATE_PROMPT.format(
+        #     kitchen_counter=kitchen_counters,
+        #     tomato=tomatoes if len(tomatoes) > 0 else "No tomato dispensers",
+        #     onion=onions,
+        #     plate=plates,
+        #     pot=pots,
+        #     serving_counter=serving_counters,
+        #     recipe_infos=text_recipe_infos,
+        #     t_format=f"t_1 = {game_turn}",
+        #     my_position=position[0],
+        #     my_orientation=orientation[0],
+        #     my_holding=held_object[0],
+        #     my_action_history=history[0],
+        #     he_position=position[1],
+        #     he_orientation=orientation[1],
+        #     he_holding=held_object[1],
+        #     he_action_history=history[1],
+        #     kitchen_counter_state=text_kitchen_counter_state,
+        #     pot_state=text_pot_state,
+        # )
+        # return {
+        #     "model1_description": model1_description,
+        #     "model2_description": model2_description,
+        #     "game_turn": self.game_turn,
+        #     "state_string": self.state_string(),
+        # }
 
     def summary(self):
         print(

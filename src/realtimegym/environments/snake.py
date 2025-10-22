@@ -185,7 +185,7 @@ class SnakeEnv(BaseEnv):
             actions = ["L", "R", "D"]
         return actions
 
-    def llm_state_builder(self):
+    def state_builder(self):
         snake = deepcopy(self.snake[::-1])
         foods = []
         for x, y in self.food:
@@ -197,31 +197,29 @@ class SnakeEnv(BaseEnv):
             "foods": foods,
             "snake": snake,
             "size": self.B,
+            "game_turn": self.game_turn,
         }
 
-    def observe(self):
-        if self.terminal:
-            return {}
-        state_for_llm = self.llm_state_builder()
-        description = "**Cells occupied by walls**:\n"
-        description += f"\t - Border Cells: x=0/x={state_for_llm['size'] - 1} or y=0/y={state_for_llm['size'] - 1}.\n"
-        description += f"\t - Internal Obstacles: {state_for_llm['internal_obstacles'] if len(state_for_llm['internal_obstacles']) > 0 else 'No internal obstacles'}\n"
-        description += f"**Snake Positions**:{state_for_llm['snake']}\n**Snake Head Direction**: {state_for_llm['snake_dir']}\n"
-        description += "**Food Positions, Life Span and Value**:\n"
-        for x, y, life_span, value in state_for_llm["foods"]:
-            description += f"\t- ({x}, {y}, {life_span}, {value})\n"
-        model1_description = (
-            f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
-        )
-        model2_description = (
-            f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
-        )
-        return {
-            "model1_description": model1_description,
-            "model2_description": model2_description,
-            "game_turn": self.game_turn,
-            "state_string": self.state_string(),
-        }
+        # state = self.llm_state_builder()
+        # description = "**Cells occupied by walls**:\n"
+        # description += f"\t - Border Cells: x=0/x={state['size'] - 1} or y=0/y={state['size'] - 1}.\n"
+        # description += f"\t - Internal Obstacles: {state['internal_obstacles'] if len(state['internal_obstacles']) > 0 else 'No internal obstacles'}\n"
+        # description += f"**Snake Positions**:{state['snake']}\n**Snake Head Direction**: {state['snake_dir']}\n"
+        # description += "**Food Positions, Life Span and Value**:\n"
+        # for x, y, life_span, value in state["foods"]:
+        #     description += f"\t- ({x}, {y}, {life_span}, {value})\n"
+        # model1_description = (
+        #     f"**Current Turn**: \( t_0 = {self.game_turn} \)\n" + description
+        # )
+        # model2_description = (
+        #     f"**Current Turn**: \( t_1 = {self.game_turn} \)\n" + description
+        # )
+        # return {
+        #     "model1_description": model1_description,
+        #     "model2_description": model2_description,
+        #     "game_turn": self.game_turn,
+        #     "state_string": self.state_string(),
+        # }
 
     def summary(self):
         print(f"Seed {self.seed} - {self.game_turn} turns, reward: {self.reward}")

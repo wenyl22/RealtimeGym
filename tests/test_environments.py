@@ -120,9 +120,7 @@ class TestFreewayEnvironment:
         """Test Freeway state string format."""
         env, _, _ = realtimegym.make("Freeway-v0", seed=0, render=False)
         obs, _ = env.reset()
-
-        state_string = obs["state_string"]
-        assert "Car" in state_string or "car" in state_string or len(state_string) > 0
+        assert "game_turn" in obs and "state_string" in obs and "state" in obs
 
 
 class TestSnakeEnvironment:
@@ -166,9 +164,7 @@ class TestOvercookedEnvironment:
         env, _, _ = realtimegym.make("Overcooked-v0", seed=0, render=False)
         obs, _ = env.reset()
 
-        assert "model1_description" in obs and "model2_description" in obs
-        assert isinstance(obs["model1_description"], str)
-        assert isinstance(obs["model2_description"], str)
+        assert "game_turn" in obs and "state_string" in obs and "state" in obs
 
 
 class TestSeeding:
@@ -192,6 +188,5 @@ class TestSeeding:
         env2, _, _ = realtimegym.make("Snake-v0", seed=1, render=False)
         obs2, _ = env2.reset()
 
-        # Note: This might not always be different, but structure should be valid
-        assert isinstance(obs1["state_string"], str)
-        assert isinstance(obs2["state_string"], str)
+        assert "game_turn" in obs1 and "state_string" in obs1 and "state" in obs1
+        assert "game_turn" in obs2 and "state_string" in obs2 and "state" in obs2

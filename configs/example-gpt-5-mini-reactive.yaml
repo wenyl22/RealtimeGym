@@ -1,0 +1,5 @@
+model: gpt-5-mini
+api_key: Your API Key Here
+inference_parameters:
+  max_tokens: 8192
+  reasoning_effort: low

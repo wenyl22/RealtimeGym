@@ -1,0 +1,3 @@
+freeway: configs/prompts/freeway.py
+overcooked: configs/prompts/overcooked.py
+snake: configs/prompts/snake.py

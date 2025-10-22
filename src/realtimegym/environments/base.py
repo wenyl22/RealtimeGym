@@ -44,19 +44,20 @@ class BaseEnv:
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    # Legacy methods for backward compatibility
-    def act(self, a):
+    def state_builder(self):
         """
-        Legacy method. Use step() instead.
-
-        """
-        raise NotImplementedError(
-            "This method has been deprecated. Use step() instead."
-        )
-
-    def observe(self):
-        """
-        Legacy method. Now step() returns observations directly.
-        Get the current observation.
+        Build a state representation for agents.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
+    
+    def observe(self):
+        """
+        Get the current observation.
+        """
+        if self.terminal:
+            return {}
+        return {
+            "state_string": self.state_string(),
+            "game_turn": self.game_turn,
+            "state": self.state_builder(),
+        }

@@ -82,8 +82,8 @@ class MyAgent(BaseAgent):
         Process observation and decide action.
 
         timeout is either:
-        - Number of tokens (if budget_format='token')
-        - Seconds (if budget_format='time')
+        - Number of tokens (if time_unit='token')
+        - Seconds (if time_unit='seconds')
         """
         pass
 
@@ -110,7 +110,7 @@ RealtimeGym includes following built-in LLM agents:
 You can evaluate these agents and large language models via cli-command `agile_eval`:
 
 ```bash
-agile_eval --budget_format token \
+agile_eval --time_unit token \
     --time_pressure 8192 \
     --internal_budget 4096 \
     --game freeway \
@@ -118,20 +118,20 @@ agile_eval --budget_format token \
     --mode agile \
     --reactive-model-config configs/deepseek-v3.2-reactive.yaml \
     --planning-model-config configs/deepseek-v3.2-planning.yaml \
-     --seed_num 1 --repeat_times 1 \
-    --log_dir logs-debug2
+     --seed_num 1 --repeat_times 1 
 ```
 
 Or more compactly:
 
 ```bash
-agile_eval --budget_format token \
+agile_eval --time_unit token \
     --settings freeway_H_8192_agile_4096 \
     --reactive-model-config configs/deepseek-v3.2-reactive.yaml \
     --planning-model-config configs/deepseek-v3.2-planning.yaml \
-    --log_dir logs-debug2 --seed_num 1 --repeat_times 1
+    --seed_num 1 --repeat_times 1
 ```
 
+Note you can also customize the prompts of the experiment by setting `--prompt-config` to a yaml file containing prompt generation modules, which should be a python file containing a function called `state_to_description()` that takes in the observation and agent type (`'reactive'`, `'planning'`, or `'agile'`) and returns one/multiple descriptions of the game state for the agent to reason on. See `configs/example-prompts.yaml` and `configs/prompts/*.py` for examples.
 
 ## Budget Formats Explained
 
@@ -145,7 +145,7 @@ agent.think(timeout=8192)
 - Best for: LLM-based agents
 - Measures: Token count from API
 
-### Time Budget
+### Physical Time Budget
 ```python
 # Agent has 5 seconds to think
 agent.think(timeout=5.0)
@@ -153,7 +153,7 @@ agent.think(timeout=5.0)
 - Best for: Real-time scenarios
 - Measures: Wall-clock seconds
 
-Set via `--budget_format token` or `--budget_format time` on command line.
+Set via `--time_unit token` or `--time_unit seconds` on command line.
 
 
 ## Examples
@@ -198,9 +198,7 @@ obs, done, reward, reset = env.step(action)
 {
     'state_string': 'Text representation of game state',
     'game_turn': 42,  # Current turn number
-    'model1_description': 'Detailed state info (game-specific) for reactive agent',
-    'model2_description': 'Detailed state info (game-specific) for planning agent',
-    # ... other game-specific fields
+    "state": { ... }  # Game-specific detailed state info in dict
 }
 ```
 

@@ -99,7 +99,7 @@ def main():
 
     # Create environment
     print("\n1. Creating environment...")
-    env, seed, _ = realtimegym.make("Freeway-v0", seed=42, render=False)
+    env, seed, _ = realtimegym.make("Freeway-v0", seed=6, render=False)
     print(f"   Environment created (seed={seed})")
 
     # Create custom agent

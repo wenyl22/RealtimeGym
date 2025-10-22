@@ -8,17 +8,15 @@ class PlanningAgent(BaseAgent):
         self,
         prompts,
         file,
-        budget_form,
-        model1_config,
+        time_unit,
         model2_config,
-        internal_budget,
-        **kwargs,
+        skip_action=False,
     ):
-        assert internal_budget == 0, "Internal budget must be a 0 for PlanningAgent."
         super().__init__(
-            prompts, file, budget_form, model1_config, model2_config, internal_budget
+            prompts, file, time_unit
         )
-        self.skip_action = kwargs.get("skip_action", False)
+        self.config_model2(model2_config)
+        self.skip_action = skip_action
 
     def truncate_logs(self):
         final_step, final_plan = 0, ""
@@ -36,14 +34,16 @@ class PlanningAgent(BaseAgent):
 
         observation = self.current_observation
         game_turn = observation["game_turn"]
+        prompt_gen = self.prompts.state_to_description(
+            observation["state"], mode="planning"
+        )
+
         prompt = ""
         if self.gen_text == "":  # check whether the last generation is finished
             messages = [
                 {
                     "role": "user",
-                    "content": self.prompts.SLOW_AGENT_PROMPT
-                    + self.prompts.ACTION_FORMAT_PROMPT
-                    + observation["model2_description"],
+                    "content": prompt_gen
                 }
             ]
             prompt = messages[-1]["content"]

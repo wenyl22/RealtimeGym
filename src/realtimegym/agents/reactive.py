@@ -8,15 +8,14 @@ class ReactiveAgent(BaseAgent):
         self,
         prompts,
         file,
-        budget_form,
+        time_unit,
         model1_config,
-        model2_config,
         internal_budget,
-        **kwargs,
     ):
         super().__init__(
-            prompts, file, budget_form, model1_config, model2_config, internal_budget
+            prompts, file, time_unit
         )
+        self.config_model1(model1_config, internal_budget)
 
     def truncate_logs(self):
         return
@@ -25,12 +24,13 @@ class ReactiveAgent(BaseAgent):
         assert self.current_observation is not None and timeout is not None
         budget = timeout
         observation = self.current_observation
-
+        prompt_gen = self.prompts.state_to_description(
+            observation["state"], mode="reactive"
+        )
         messages = [
             {
                 "role": "user",
-                "content": self.prompts.FAST_AGENT_PROMPT
-                + observation["model1_description"],
+                "content": prompt_gen
             }
         ]
         text, token_num = self.reactive_inference(messages, budget)

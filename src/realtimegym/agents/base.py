@@ -16,42 +16,21 @@ class BaseAgent:
         self,
         prompts,
         file,
-        budget_form,
-        model1_config,
-        model2_config,
-        internal_budget,
+        time_unit,
     ):
         self.prompts = prompts
         self.file = file
-        self.budget_form = budget_form
+        self.time_unit = time_unit
         self.model1 = None
         self.model2 = None
         self.tokenizer = None
-        if model1_config is not None:
-            with open(model1_config, "r") as f:
-                self.model1_config = yaml.safe_load(f)
-            self.llm1 = OpenAI(
-                api_key=self.model1_config["api_key"],
-                base_url=self.model1_config["url"],
-            )
-            self.model1 = self.model1_config["model"]
-        if model2_config is not None:
-            with open(model2_config, "r") as f:
-                self.model2_config = yaml.safe_load(f)
-            self.llm2 = OpenAI(
-                api_key=self.model2_config["api_key"],
-                base_url=self.model2_config["url"],
-            )
-            self.model2 = self.model2_config["model"]
-            if "tokenizer" in self.model2_config:
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    self.model2_config["tokenizer"]
-                )
-        self.internal_budget = internal_budget
+        self.llm1 = None
+        self.llm2 = None
+        self.internal_budget = 0
 
         self.logs = defaultdict(list)
         # better not set log_thinking to True for time-based budget, since storing logs can be slow and interfere with timing
-        self.log_thinking = True if budget_form == "token" else False
+        self.log_thinking = True if time_unit == "token" else False
         self.action = prompts.DEFAULT_ACTION
         self.to_flush = ""
         self.to_flush_turn = 0
@@ -68,7 +47,30 @@ class BaseAgent:
 
         # New API: store current observation
         self.current_observation = None
+    
+    def config_model1(self, model1_config, internal_budget):
+        with open(model1_config, "r") as f:
+            self.model1_config = yaml.safe_load(f)
+        self.llm1 = OpenAI(
+            api_key=self.model1_config["api_key"],
+            base_url=self.model1_config["url"],
+        )
+        self.model1 = self.model1_config["model"]
+        self.internal_budget = internal_budget
 
+    def config_model2(self, model2_config):
+        with open(model2_config, "r") as f:
+            self.model2_config = yaml.safe_load(f)
+        self.llm2 = OpenAI(
+            api_key=self.model2_config["api_key"],
+            base_url=self.model2_config["url"],
+        )
+        self.model2 = self.model2_config["model"]
+        if "tokenizer" in self.model2_config:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model2_config["tokenizer"]
+            )
+    
     def observe(self, observation):
         """
         Receive and store the current observation from the environment.
@@ -102,7 +104,7 @@ class BaseAgent:
         self.logs["reward"].append(reward)
         if reset:
             self.plan = ""
-            if self.budget_form == "token":
+            if self.time_unit == "token":
                 while self.gen_text != "":
                     self.planning_inference([], 80000, 0)
             else:
@@ -228,7 +230,7 @@ class BaseAgent:
     def reactive_inference(self, messages, budget):
         assert self.model1 is not None, "Reactive LLM is not initialized!"
         sampling_params = self.model1_config.get("inference_parameters", {})
-        if self.budget_form == "token":
+        if self.time_unit == "token":
             sampling_params["max_tokens"] = min(
                 self.internal_budget, sampling_params.get("max_tokens", 80000)
             )
@@ -277,7 +279,7 @@ class BaseAgent:
         assert self.model2 is not None, "Planning LLM is not initialized!"
         token_num = 0
         sampling_params = self.model2_config.get("inference_parameters", {})
-        if self.budget_form == "token":
+        if self.time_unit == "token":
             if messages != []:
                 self.gen_turn = game_turn
                 self.gen_accum = -self.internal_budget

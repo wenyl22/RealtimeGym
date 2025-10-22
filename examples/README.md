@@ -45,15 +45,6 @@ Explores all difficulty levels (Easy, Medium, Hard):
 
 **Run:** `python examples/difficulty_levels.py`
 
-### 5. `budget_format.py` - Budget Management Guide
-Comprehensive guide to budget formats in RealtimeGym:
-- Token-based budgets for LLM agents
-- Time-based budgets for real-time constraints
-- Command-line and programmatic usage
-- Working examples with both budget types
-
-**Run:** `python examples/budget_format.py`
-
 ## The RealtimeGym API
 
 All examples follow the standard API pattern:

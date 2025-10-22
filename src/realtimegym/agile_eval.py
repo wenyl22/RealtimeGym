@@ -2,8 +2,8 @@ import argparse
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from importlib import import_module
-
+import importlib
+import sys
 import pandas as pd
 import pygame
 from PIL import Image
@@ -12,7 +12,45 @@ import realtimegym
 from realtimegym.agents.agile import AgileThinker
 from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.reactive import ReactiveAgent
+import yaml
 
+def _load_prompt_module(specifier: str):
+    """
+    Load prompt module from:
+      - file path (relative or absolute), e.g. "configs/prompts/freeway.py" or "configs/prompts/freeway"
+      - path-like with slashes, e.g. "configs/prompts/freeway"
+      - dotted module name, e.g. "configs.prompts.freeway"
+    Returns imported module.
+    """
+    project_root = os.getcwd()
+
+    # 1) Try resolve as file path (with or without .py)
+    candidates = [specifier]
+    if not specifier.endswith(".py"):
+        candidates.append(specifier + ".py")
+    # also try relative to project root
+    candidates += [os.path.join(project_root, c) for c in list(candidates)]
+    for p in candidates:
+        if os.path.exists(p) and os.path.isfile(p):
+            name = "realtimegym._prompt_" + os.path.splitext(os.path.basename(p))[0]
+            spec = importlib.util.spec_from_file_location(name, p)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)  # type: ignore
+            return module
+
+    # 2) Try convert slashes to dots and import as module
+    modname = specifier.replace("/", ".").rstrip(".py")
+    # ensure project root on sys.path so 'configs' can be found if it's not a package
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    try:
+        return importlib.import_module(modname)
+    except Exception as e:
+        raise ImportError(
+            f"Cannot load prompt module '{specifier}' as path or module ({e}). "
+            "If it's a file, pass its path (e.g. configs/prompts/freeway.py); "
+            "or make configs a package, or ensure project root is correct."
+        )
 
 def check_args(args):
     if args.mode == "planning":
@@ -25,10 +63,6 @@ def check_args(args):
 
 
 def game_loop(file, raw_seed, args):
-    # env_m: Any = import_module("realtimegym.environments." + args.game)
-    # env, seed, render = env_m.setup_env(  # type: ignore
-    #     raw_seed, args.cognitive_load, args.save_trajectory_gifs
-    # )
     version = (
         "0"
         if args.cognitive_load == "E"
@@ -36,23 +70,34 @@ def game_loop(file, raw_seed, args):
         if args.cognitive_load == "M"
         else "2"
     )
+    
     env, seed, render = realtimegym.make(
         f"{args.game.capitalize()}-v{version}",
         seed=raw_seed,
         render=args.save_trajectory_gifs,
     )
-    agent = None
+    with open(args.prompt_config, "r") as f:
+        prompt_config = yaml.safe_load(f)
+    assert args.game in prompt_config, "Game not found in prompt config."
+
     params = {
-        "prompts": import_module("realtimegym.environments.prompts." + args.game),
+        "prompts": _load_prompt_module(prompt_config[args.game]),
         "file": file,
-        "budget_form": args.budget_format,
-        "model2_config": args.planning_model_config,
-        "model1_config": args.reactive_model_config,
-        "internal_budget": args.internal_budget,
-        "skip_action": True,
+        "time_unit": args.time_unit,
     }
-    if args.game == "overcooked":
-        params["skip_action"] = False
+
+    if args.mode != "reactive":
+        params["model2_config"] = args.planning_model_config
+    
+    if args.mode != "planning":
+        params["model1_config"] = args.reactive_model_config
+        params["internal_budget"] = args.internal_budget
+    
+    if args.mode == "planning":
+        params["skip_action"] = True
+        if args.game == "overcooked":
+            params["skip_action"] = False
+    
     if args.mode == "reactive":
         agent = ReactiveAgent(**params)  # type: ignore
     elif args.mode == "planning":
@@ -61,6 +106,7 @@ def game_loop(file, raw_seed, args):
         agent = AgileThinker(**params)  # type: ignore
     else:
         raise NotImplementedError("mode not recognized.")
+    
     if args.checkpoint is not None:  # resume from checkpoint
         checkpoint_file = file.replace(args.log_dir, args.checkpoint)
         df = pd.read_csv(checkpoint_file)
@@ -76,9 +122,10 @@ def game_loop(file, raw_seed, args):
             }
             return ret
         else:
-            env_m = import_module("realtimegym.environments." + args.game)
-            env, seed, render = env_m.setup_env(  # type: ignore
-                raw_seed, args.cognitive_load, args.save_trajectory_gifs
+            env, seed, render = realtimegym.make(
+                f"{args.game.capitalize()}-v{version}",
+                seed=raw_seed,
+                render=args.save_trajectory_gifs,
             )
             agent.resume_from_checkpoint(env, checkpoint_file)
     start_time = time.time()
@@ -127,6 +174,7 @@ def main():
     )
     args.add_argument("--planning-model-config", type=str, default=None)
     args.add_argument("--reactive-model-config", type=str, default=None)
+    args.add_argument("--prompt-config", type=str, default="configs/example-prompts.yaml")
     args.add_argument(
         "--game",
         type=str,
@@ -134,7 +182,7 @@ def main():
         default="freeway",
     )
     args.add_argument(
-        "--budget_format", type=str, choices=["token", "time"], default="token"
+        "--time_unit", type=str, choices=["token", "seconds"], default="token"
     )
     args.add_argument("--time_pressure", type=int, default=8192)
     args.add_argument("--cognitive_load", type=str, choices=["E", "M", "H"])

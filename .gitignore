@@ -18,3 +18,4 @@ __pycache__
 *.png
 configs/deepseek*
 !assets/*.png
+src/realtimegym/environments/prompts

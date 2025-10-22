@@ -9,15 +9,16 @@ class AgileThinker(BaseAgent):
         self,
         prompts,
         file,
-        budget_form,
+        time_unit,
         model1_config,
         model2_config,
         internal_budget,
-        **kwargs,
     ):
         super().__init__(
-            prompts, file, budget_form, model1_config, model2_config, internal_budget
+            prompts, file, time_unit
         )
+        self.config_model1(model1_config, internal_budget)
+        self.config_model2(model2_config)
 
     def truncate_logs(self):
         final_step = 0
@@ -33,14 +34,15 @@ class AgileThinker(BaseAgent):
         observation = self.current_observation
         self.state_string = observation["state_string"]
         game_turn = observation["game_turn"]
+        prompt_gen = self.prompts.state_to_description(
+            observation["state"], mode="agile"
+        )
         prompt = ""
         if self.gen_text == "":  # check whether the last generation is finished
             messages = [
                 {
                     "role": "user",
-                    "content": self.prompts.SLOW_AGENT_PROMPT
-                    + self.prompts.CONCLUSION_FORMAT_PROMPT
-                    + observation["model2_description"],
+                    "content": prompt_gen["planning"]
                 }
             ]
             prompt = messages[-1]["content"]
@@ -54,12 +56,17 @@ class AgileThinker(BaseAgent):
             self.logs["model2_response"].append(text)
         self.logs["model2_token_num"].append(token_num)
 
-        prompt = self.prompts.FAST_AGENT_PROMPT + observation["model1_description"]
+        prompt = prompt_gen["reactive"]
         if self.plan is not None:
             lines = self.plan.split("\n")
             for line in lines:
                 prompt += f"> {line.strip()}\n"
-        messages = [{"role": "user", "content": prompt}]
+        messages = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
         text, token_num = self.reactive_inference(messages, self.internal_budget)
         self.action = re.sub(
             r"[^" + self.prompts.ALL_ACTIONS + "]", "", extract_boxed(text)
