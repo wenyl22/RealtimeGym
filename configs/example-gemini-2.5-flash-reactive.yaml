@@ -1,20 +1,13 @@
-model: gemini-2.5-flash
+model: gemini-2.0-flash-exp # or gemini-1.5-flash, gemini-1.5-pro
 url: https://generativelanguage.googleapis.com/v1beta/openai/
-api_key: Your API Key Here
+api_key: ${GEMINI_API_KEY} # Get your API key from https://aistudio.google.com/apikey
 inference_parameters:
-  extra_body:
-    google:
-      thinking_config:
-        thinking_budget: 0
-        include_thoughts: true
-
-# extra_body={
-#     'extra_body': {
-#       "google": {
-#         "thinking_config": {
-#           "thinking_budget": 800,
-#           "include_thoughts": True
-#         }
-#       }
-#     }
-#   }
+  max_tokens: 8192
+  temperature: 0.7
+  # Note: Gemini's OpenAI-compatible endpoint may not support all extra_body parameters
+  # If you get errors, try removing the extra_body section below
+  # extra_body:
+  #   google:
+  #     thinking_config:
+  #       thinking_budget: 0
+  #       include_thoughts: true
