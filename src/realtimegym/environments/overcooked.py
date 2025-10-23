@@ -5,7 +5,6 @@
 # See overcooked_new/THIRD_PARTY_NOTICE.md for license and attribution details.
 
 import os
-from copy import deepcopy
 from pathlib import Path
 
 from .base import BaseEnv
@@ -15,10 +14,6 @@ from .overcooked_new.src.overcooked_ai_py.mdp.actions import (  # type: ignore
     Action,
     Direction,
 )
-from .overcooked_new.src.overcooked_ai_py.mdp.overcooked_mdp import (
-    Recipe,  # type: ignore
-)
-from .prompts.overcooked import GAME_STATE_PROMPT
 from .render.overcooked_render import OvercookedRender
 
 cognitive_load_layout_mapping = {

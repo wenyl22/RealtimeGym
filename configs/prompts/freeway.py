@@ -99,7 +99,8 @@ DEFAULT_ACTION = "U"
 
 ALL_ACTIONS = "UDS"
 
-def state_to_description(state_for_llm, mode = None):
+
+def state_to_description(state_for_llm, mode=None):
     game_turn = state_for_llm["game_turn"]
     description = (
         f"""**Player Position:** \( (0, {state_for_llm["player_states"]}) \)\n"""
@@ -131,6 +132,8 @@ def state_to_description(state_for_llm, mode = None):
         return SLOW_AGENT_PROMPT + ACTION_FORMAT_PROMPT + model2_description
     elif mode == "agile":
         return {
-            "planning": SLOW_AGENT_PROMPT + CONCLUSION_FORMAT_PROMPT + model2_description,
+            "planning": SLOW_AGENT_PROMPT
+            + CONCLUSION_FORMAT_PROMPT
+            + model2_description,
             "reactive": FAST_AGENT_PROMPT + model1_description,
         }

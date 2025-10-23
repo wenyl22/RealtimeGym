@@ -132,7 +132,7 @@ DEFAULT_ACTION = "S"
 ALL_ACTIONS = "LRUD"
 
 
-def state_to_description(state_for_llm, mode = None):
+def state_to_description(state_for_llm, mode=None):
     game_turn = state_for_llm["game_turn"]
     description = "**Cells occupied by walls**:\n"
     description += f"\t - Border Cells: x=0/x={state_for_llm['size'] - 1} or y=0/y={state_for_llm['size'] - 1}.\n"
@@ -141,18 +141,16 @@ def state_to_description(state_for_llm, mode = None):
     description += "**Food Positions, Life Span and Value**:\n"
     for x, y, life_span, value in state_for_llm["foods"]:
         description += f"\t- ({x}, {y}, {life_span}, {value})\n"
-    model1_description = (
-        f"**Current Turn**: \( t_0 = {game_turn} \)\n" + description
-    )
-    model2_description = (
-        f"**Current Turn**: \( t_1 = {game_turn} \)\n" + description
-    )
+    model1_description = f"**Current Turn**: \( t_0 = {game_turn} \)\n" + description
+    model2_description = f"**Current Turn**: \( t_1 = {game_turn} \)\n" + description
     if mode == "reactive":
         return FAST_AGENT_PROMPT + model1_description
     elif mode == "planning":
         return SLOW_AGENT_PROMPT + ACTION_FORMAT_PROMPT + model2_description
     elif mode == "agile":
         return {
-            "planning": SLOW_AGENT_PROMPT + CONCLUSION_FORMAT_PROMPT + model2_description,
+            "planning": SLOW_AGENT_PROMPT
+            + CONCLUSION_FORMAT_PROMPT
+            + model2_description,
             "reactive": FAST_AGENT_PROMPT + model1_description,
         }

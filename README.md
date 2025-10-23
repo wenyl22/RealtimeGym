@@ -118,7 +118,7 @@ agile_eval --time_unit token \
     --mode agile \
     --reactive-model-config configs/deepseek-v3.2-reactive.yaml \
     --planning-model-config configs/deepseek-v3.2-planning.yaml \
-     --seed_num 1 --repeat_times 1 
+     --seed_num 1 --repeat_times 1
 ```
 
 Or more compactly:
@@ -212,13 +212,14 @@ pytest
 
 ## Development
 
-Make sure to use `uv` and `pre-commit`:
+Make sure to use `pre-commit`:
 
 ### Pre-commit Hooks
 
 ```bash
 # Install hooks
-uv run pre-commit install
+run pre-commit install
+pre-commit run --all-files
 ```
 
 ### Static Typing

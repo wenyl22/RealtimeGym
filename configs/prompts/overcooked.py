@@ -1,3 +1,6 @@
+from realtimegym.environments.overcooked import Recipe, orientation_to_char_mapping
+from copy import deepcopy
+
 SLOW_AGENT_PROMPT = """
 Help Alice collaborate with Bob in *Overcooked* to maximize the total reward from delivered soup recipes. Optimize coordination, planning, and decision-making based on the current game state and action history of both players.
 ---
@@ -157,10 +160,8 @@ Note: Action history is a list of actions taken by the player in the passed seve
 ALL_ACTIONS = "UDLRIS"
 DEFAULT_ACTION = "S"
 
-from realtimegym.environments.overcooked import Recipe, orientation_to_char_mapping
-from copy import deepcopy
 
-def state_to_description(state_for_llm, mode = None):
+def state_to_description(state_for_llm, mode=None):
     kitchen_counters = state_for_llm["layout"]["X"]
     tomatoes = state_for_llm["layout"]["T"]
     onions = state_for_llm["layout"]["O"]
@@ -175,11 +176,7 @@ def state_to_description(state_for_llm, mode = None):
             [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
         )
         num_tomatoes = len(
-            [
-                ingredient
-                for ingredient in ingredients
-                if ingredient == Recipe.TOMATO
-            ]
+            [ingredient for ingredient in ingredients if ingredient == Recipe.TOMATO]
         )
         reward = recipe["value"]
         time = recipe["time"]
@@ -220,19 +217,14 @@ def state_to_description(state_for_llm, mode = None):
         assert soup["name"] == "soup", f"Object {soup['name']} is not a soup."
         ingredients = soup["_ingredients"]
         assert (
-            sum([ingredient["position"] != pot_id for ingredient in ingredients])
-            == 0
+            sum([ingredient["position"] != pot_id for ingredient in ingredients]) == 0
         ), f"No ingredients found in pot {pot_id}."
         ingredients = [ingredient["name"] for ingredient in ingredients]
         num_onions = len(
             [ingredient for ingredient in ingredients if ingredient == Recipe.ONION]
         )
         num_tomatoes = len(
-            [
-                ingredient
-                for ingredient in ingredients
-                if ingredient == Recipe.TOMATO
-            ]
+            [ingredient for ingredient in ingredients if ingredient == Recipe.TOMATO]
         )
         if len(ingredients) == 0:
             ingredients = "nothing"
@@ -299,6 +291,8 @@ def state_to_description(state_for_llm, mode = None):
         return SLOW_AGENT_PROMPT + ACTION_FORMAT_PROMPT + model2_description
     elif mode == "agile":
         return {
-            "planning": SLOW_AGENT_PROMPT + CONCLUSION_FORMAT_PROMPT + model2_description,
+            "planning": SLOW_AGENT_PROMPT
+            + CONCLUSION_FORMAT_PROMPT
+            + model2_description,
             "reactive": FAST_AGENT_PROMPT + model1_description,
         }
