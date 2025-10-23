@@ -131,7 +131,24 @@ agile_eval --time_unit token \
     --seed_num 1 --repeat_times 1
 ```
 
-Note you can also customize the prompts of the experiment by setting `--prompt-config` to a yaml file containing prompt generation modules, which should be a python file containing a function called `state_to_description()` that takes in the observation and agent type (`'reactive'`, `'planning'`, or `'agile'`) and returns one/multiple descriptions of the game state for the agent to reason on. See `configs/example-prompts.yaml` and `configs/prompts/*.py` for examples.
+### Customizing Prompts
+
+You can customize the prompts by setting `--prompt-config` to a YAML file that maps game names to prompt modules. Each prompt module should contain:
+- A `state_to_description()` function that takes the observation and agent type (`'reactive'`, `'planning'`, or `'agile'`) and returns descriptions of the game state
+- Constants: `ALL_ACTIONS` and `DEFAULT_ACTION`
+
+**Built-in prompt structure:**
+- `configs/example-prompts.yaml` - Maps game names to prompt modules
+- `src/realtimegym/prompts/` - Contains both Python modules and YAML template files
+  - `*.py` files contain the state conversion logic
+  - `*.yaml` files contain the prompt template strings
+
+The YAML templates are bundled with the package and will be included when installed via pip.
+
+**To create custom prompts:**
+1. Create a new Python module following the pattern in `src/realtimegym/prompts/`
+2. Optionally create a YAML file with your prompt templates
+3. Reference your module in a custom prompt config YAML file
 
 ## Budget Formats Explained
 

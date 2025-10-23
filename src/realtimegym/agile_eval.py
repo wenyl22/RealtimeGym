@@ -1,28 +1,28 @@
 import argparse
+import importlib
+import importlib.util
 import os
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import importlib
-import sys
+
 import pandas as pd
 import pygame
+import yaml
 from PIL import Image
 
 import realtimegym
 from realtimegym.agents.agile import AgileThinker
 from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.reactive import ReactiveAgent
-import yaml
-
-from importlib import util as importlib_util
 
 
 def _load_prompt_module(specifier: str):
     """
     Load prompt module from:
-      - file path (relative or absolute), e.g. "configs/prompts/freeway.py" or "configs/prompts/freeway"
+      - dotted module name (recommended), e.g. "realtimegym.prompts.freeway"
+      - file path (backward compatibility), e.g. "configs/prompts/freeway.py"
       - path-like with slashes, e.g. "configs/prompts/freeway"
-      - dotted module name, e.g. "configs.prompts.freeway"
     Returns imported module.
     """
     project_root = os.getcwd()
@@ -36,17 +36,17 @@ def _load_prompt_module(specifier: str):
     for p in candidates:
         if os.path.exists(p) and os.path.isfile(p):
             name = "realtimegym._prompt_" + os.path.splitext(os.path.basename(p))[0]
-            spec = importlib_util.spec_from_file_location(name, p)
-            if spec is None or spec.loader is None:
+            spec = importlib.util.spec_from_file_location(name, p)
+            if spec is None:
                 continue
-            module = importlib_util.module_from_spec(spec)
-            if module is None:
-                continue
+            module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)  # type: ignore
             return module
 
     # 2) Try convert slashes to dots and import as module
-    modname = specifier.replace("/", ".").rstrip(".py")
+    modname = specifier.replace("/", ".")
+    if modname.endswith(".py"):
+        modname = modname[:-3]
     # ensure project root on sys.path so 'configs' can be found if it's not a package
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
@@ -55,8 +55,8 @@ def _load_prompt_module(specifier: str):
     except Exception as e:
         raise ImportError(
             f"Cannot load prompt module '{specifier}' as path or module ({e}). "
-            "If it's a file, pass its path (e.g. configs/prompts/freeway.py); "
-            "or make configs a package, or ensure project root is correct."
+            "Recommended: use module name (e.g. realtimegym.prompts.freeway). "
+            "For backward compatibility, file paths are also supported (e.g. configs/prompts/freeway.py)."
         )
 
 

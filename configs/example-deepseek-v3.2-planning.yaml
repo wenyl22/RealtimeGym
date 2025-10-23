@@ -1,6 +1,6 @@
 model: deepseek-reasoner
 url: https://api.deepseek.com
-api_key: Your API Key Here
+api_key: ${DEEPSEEK_API_KEY} # Set this in .env file or environment
 inference_parameters:
   temperature: 0.6
   top_p: 0.95

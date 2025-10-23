@@ -14,7 +14,12 @@ from .overcooked_new.src.overcooked_ai_py.mdp.actions import (  # type: ignore
     Action,
     Direction,
 )
+from .overcooked_new.src.overcooked_ai_py.mdp.overcooked_mdp import (
+    Recipe,  # type: ignore
+)
 from .render.overcooked_render import OvercookedRender
+
+__all__ = ["Recipe", "orientation_to_char_mapping", "OvercookedEnv"]
 
 cognitive_load_layout_mapping = {
     "E": "cc_easy",
