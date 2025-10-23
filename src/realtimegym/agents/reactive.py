@@ -12,9 +12,7 @@ class ReactiveAgent(BaseAgent):
         model1_config,
         internal_budget,
     ):
-        super().__init__(
-            prompts, file, time_unit
-        )
+        super().__init__(prompts, file, time_unit)
         self.config_model1(model1_config, internal_budget)
 
     def truncate_logs(self):
@@ -27,12 +25,7 @@ class ReactiveAgent(BaseAgent):
         prompt_gen = self.prompts.state_to_description(
             observation["state"], mode="reactive"
         )
-        messages = [
-            {
-                "role": "user",
-                "content": prompt_gen
-            }
-        ]
+        messages = [{"role": "user", "content": prompt_gen}]
         text, token_num = self.reactive_inference(messages, budget)
         self.action = re.sub(
             r"[^" + self.prompts.ALL_ACTIONS + "]", "", extract_boxed(text)

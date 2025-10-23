@@ -49,7 +49,7 @@ class BaseEnv:
         Build a state representation for agents.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
-    
+
     def observe(self):
         """
         Get the current observation.

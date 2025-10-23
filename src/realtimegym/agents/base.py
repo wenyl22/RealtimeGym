@@ -1,3 +1,4 @@
+import os
 import queue
 import re
 import threading
@@ -9,6 +10,14 @@ import pandas as pd
 import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer
+
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, will use system environment variables only
 
 
 class BaseAgent:
@@ -47,13 +56,46 @@ class BaseAgent:
 
         # New API: store current observation
         self.current_observation = None
-    
+
+    def _resolve_env_var(self, value):
+        """
+        Resolve environment variable references in config values.
+        Supports ${VAR_NAME} syntax.
+
+        Args:
+            value: String that may contain ${VAR_NAME} references
+
+        Returns:
+            Resolved string with environment variables substituted
+        """
+        if not isinstance(value, str):
+            return value
+
+        # Match ${VAR_NAME} pattern
+        pattern = r"\$\{([^}]+)\}"
+
+        def replace_env_var(match):
+            var_name = match.group(1)
+            env_value = os.getenv(var_name)
+            if env_value is None:
+                raise ValueError(
+                    f"Environment variable '{var_name}' not found. "
+                    f"Please set it in your .env file or environment."
+                )
+            return env_value
+
+        return re.sub(pattern, replace_env_var, value)
+
     def config_model1(self, model1_config, internal_budget):
         with open(model1_config, "r") as f:
             self.model1_config = yaml.safe_load(f)
+
+        # Resolve environment variables in api_key
+        api_key = self._resolve_env_var(self.model1_config["api_key"])
+
         self.llm1 = OpenAI(
-            api_key=self.model1_config["api_key"],
-            base_url=self.model1_config["url"],
+            api_key=api_key,
+            base_url=self.model1_config.get("url"),
         )
         self.model1 = self.model1_config["model"]
         self.internal_budget = internal_budget
@@ -61,16 +103,20 @@ class BaseAgent:
     def config_model2(self, model2_config):
         with open(model2_config, "r") as f:
             self.model2_config = yaml.safe_load(f)
+
+        # Resolve environment variables in api_key
+        api_key = self._resolve_env_var(self.model2_config["api_key"])
+
         self.llm2 = OpenAI(
-            api_key=self.model2_config["api_key"],
-            base_url=self.model2_config["url"],
+            api_key=api_key,
+            base_url=self.model2_config.get("url"),
         )
         self.model2 = self.model2_config["model"]
         if "tokenizer" in self.model2_config:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model2_config["tokenizer"]
             )
-    
+
     def observe(self, observation):
         """
         Receive and store the current observation from the environment.
