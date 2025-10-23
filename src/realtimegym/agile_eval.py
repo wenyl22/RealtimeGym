@@ -14,6 +14,8 @@ from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.reactive import ReactiveAgent
 import yaml
 
+from importlib import util as importlib_util
+
 
 def _load_prompt_module(specifier: str):
     """
@@ -34,8 +36,12 @@ def _load_prompt_module(specifier: str):
     for p in candidates:
         if os.path.exists(p) and os.path.isfile(p):
             name = "realtimegym._prompt_" + os.path.splitext(os.path.basename(p))[0]
-            spec = importlib.util.spec_from_file_location(name, p)
-            module = importlib.util.module_from_spec(spec)
+            spec = importlib_util.spec_from_file_location(name, p)
+            if spec is None or spec.loader is None:
+                continue
+            module = importlib_util.module_from_spec(spec)
+            if module is None:
+                continue
             spec.loader.exec_module(module)  # type: ignore
             return module
 

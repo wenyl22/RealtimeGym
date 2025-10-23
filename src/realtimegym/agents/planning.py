@@ -12,9 +12,7 @@ class PlanningAgent(BaseAgent):
         model2_config,
         skip_action=False,
     ):
-        super().__init__(
-            prompts, file, time_unit
-        )
+        super().__init__(prompts, file, time_unit)
         self.config_model2(model2_config)
         self.skip_action = skip_action
 
@@ -40,12 +38,7 @@ class PlanningAgent(BaseAgent):
 
         prompt = ""
         if self.gen_text == "":  # check whether the last generation is finished
-            messages = [
-                {
-                    "role": "user",
-                    "content": prompt_gen
-                }
-            ]
+            messages = [{"role": "user", "content": prompt_gen}]
             prompt = messages[-1]["content"]
         else:
             messages = []

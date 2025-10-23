@@ -218,8 +218,7 @@ Make sure to use `pre-commit`:
 
 ```bash
 # Install hooks
-run pre-commit install
-pre-commit run --all-files
+uv run pre-commit install
 ```
 
 ### Static Typing

@@ -47,7 +47,7 @@ class BaseAgent:
 
         # New API: store current observation
         self.current_observation = None
-    
+
     def config_model1(self, model1_config, internal_budget):
         with open(model1_config, "r") as f:
             self.model1_config = yaml.safe_load(f)
@@ -70,7 +70,7 @@ class BaseAgent:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model2_config["tokenizer"]
             )
-    
+
     def observe(self, observation):
         """
         Receive and store the current observation from the environment.

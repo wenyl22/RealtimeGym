@@ -14,9 +14,7 @@ class AgileThinker(BaseAgent):
         model2_config,
         internal_budget,
     ):
-        super().__init__(
-            prompts, file, time_unit
-        )
+        super().__init__(prompts, file, time_unit)
         self.config_model1(model1_config, internal_budget)
         self.config_model2(model2_config)
 
@@ -39,12 +37,7 @@ class AgileThinker(BaseAgent):
         )
         prompt = ""
         if self.gen_text == "":  # check whether the last generation is finished
-            messages = [
-                {
-                    "role": "user",
-                    "content": prompt_gen["planning"]
-                }
-            ]
+            messages = [{"role": "user", "content": prompt_gen["planning"]}]
             prompt = messages[-1]["content"]
         else:
             messages = []
@@ -61,12 +54,7 @@ class AgileThinker(BaseAgent):
             lines = self.plan.split("\n")
             for line in lines:
                 prompt += f"> {line.strip()}\n"
-        messages = [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        messages = [{"role": "user", "content": prompt}]
         text, token_num = self.reactive_inference(messages, self.internal_budget)
         self.action = re.sub(
             r"[^" + self.prompts.ALL_ACTIONS + "]", "", extract_boxed(text)

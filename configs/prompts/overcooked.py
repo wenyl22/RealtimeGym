@@ -1,4 +1,7 @@
-from realtimegym.environments.overcooked import Recipe, orientation_to_char_mapping
+from realtimegym.environments.overcooked import orientation_to_char_mapping
+from realtimegym.environments.overcooked_new.src.overcooked_ai_py.mdp.overcooked_mdp import (
+    Recipe,
+)
 from copy import deepcopy
 
 SLOW_AGENT_PROMPT = """

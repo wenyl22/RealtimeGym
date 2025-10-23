@@ -213,7 +213,6 @@ class FreewayEnv(BaseEnv):
         }
         return state
 
-
     #     state_for_llm = self.llm_state_builder()
     #     description = (
     #         f"""**Player Position:** \( (0, {state_for_llm["player_states"]}) \)\n"""
