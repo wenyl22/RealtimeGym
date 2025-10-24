@@ -4,7 +4,8 @@ import importlib.util
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from datetime import datetime
 
 import pandas as pd
 import pygame
@@ -220,7 +221,9 @@ def main():
         new_args.mode = mode
         new_args.internal_budget = int(internal_budget)
         check_args(new_args)
-        log_dir = new_args.log_dir + f"/{setting}"
+        log_dir = (
+            new_args.log_dir + f"/{setting}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         for seed in range(args.seed_num):
             for r in range(args.repeat_times):
                 if not os.path.exists(log_dir + f"/{r}_{seed}.csv"):
@@ -234,7 +237,7 @@ def main():
                 f.write("\n")
     if args.instance_num is not None:
         assert args.instance_num == len(instance), "instance_num incorrect!"
-    with ThreadPoolExecutor(max_workers=len(instance)) as executor:
+    with ProcessPoolExecutor(max_workers=len(instance)) as executor:
         futures = [
             executor.submit(game_loop, log_file, seed, args)
             for (log_file, seed, args) in instance
