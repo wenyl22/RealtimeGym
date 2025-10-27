@@ -195,7 +195,14 @@ class BaseAgent:
                     )
                 if response.choices[0].message.content is not None:
                     text += response.choices[0].message.content
-                token_num = response.usage.completion_tokens
+                if (
+                    "gemini" in model
+                ):  ### GEMINI EXCEPTION: completion_tokens do not include thinking tokens
+                    token_num = (
+                        response.usage.total_tokens - response.usage.prompt_tokens
+                    )
+                else:
+                    token_num = response.usage.completion_tokens
                 return text, token_num
             except Exception as e:
                 print(f"Error: {e}")
