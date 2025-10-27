@@ -17,6 +17,10 @@ class AgileThinker(BaseAgent):
         super().__init__(prompts, file, time_unit)
         self.config_model1(model1_config, internal_budget)
         self.config_model2(model2_config)
+        if self.time_unit == "token":
+            assert self.tokenizer is not None, (
+                "Tokenizer must be initialized for agile agent under token-based time unit."
+            )
 
     def truncate_logs(self):
         final_step = 0

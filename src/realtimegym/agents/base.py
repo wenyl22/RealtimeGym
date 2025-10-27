@@ -145,6 +145,7 @@ class BaseAgent:
         return self.action
 
     def log(self, reward, reset):
+        assert self.current_observation is not None, "Current observation is not set!"
         self.logs["render"].append(self.current_observation["state_string"])
         self.logs["action"].append(self.action)
         self.logs["reward"].append(reward)
@@ -211,6 +212,10 @@ class BaseAgent:
         params["stream"] = True
 
         def planning_worker():
+            assert self.planning_queue is not None, "Planning queue is not initialized!"
+            assert self.planning_done is not None, (
+                "Planning done event is not initialized!"
+            )
             try:
                 stream_obj = llm.chat.completions.create(**params)
                 for chunk in stream_obj:
@@ -225,6 +230,7 @@ class BaseAgent:
     def get_planning_chunks(self):
         text = ""
         token_num = 0
+        assert self.planning_queue is not None, "Planning queue is not initialized!"
         while not self.planning_queue.empty():
             chunk = self.planning_queue.get()
             if (
@@ -248,6 +254,7 @@ class BaseAgent:
         return text, token_num
 
     def is_planning_finished(self):
+        assert self.planning_done is not None, "Planning done event is not initialized!"
         return self.planning_done.is_set()
 
     def start_reactive_stream(self, llm, model, messages, sampling_params, max_time):
@@ -276,10 +283,17 @@ class BaseAgent:
     def reactive_inference(self, messages, budget):
         assert self.model1 is not None, "Reactive LLM is not initialized!"
         sampling_params = self.model1_config.get("inference_parameters", {})
+        assert isinstance(self.llm1, OpenAI), "LLM1 is not an instance of OpenAI!"
         if self.time_unit == "token":
-            sampling_params["max_tokens"] = min(
-                self.internal_budget, sampling_params.get("max_tokens", 80000)
-            )
+            if "max_completion_tokens" in sampling_params:
+                sampling_params["max_completion_tokens"] = min(
+                    self.internal_budget,
+                    sampling_params["max_completion_tokens"],
+                )
+            else:
+                sampling_params["max_tokens"] = min(
+                    self.internal_budget, sampling_params.get("max_tokens", 80000)
+                )
             text, token_num = self.generate(
                 self.llm1, self.model1, messages, sampling_params
             )
@@ -301,14 +315,18 @@ class BaseAgent:
         max_attempt = 3
         while max_attempt > 0:
             max_attempt -= 1
+            new_params = {
+                "model": self.model1,
+                "messages": messages + [{"role": "assistant", "content": text}],
+                "temperature": 0,
+                "top_p": 1,
+            }
+            if "max_completion_tokens" in sampling_params:
+                new_params["max_completion_tokens"] = 1
+            else:
+                new_params["max_tokens"] = 1
             try:
-                response = self.llm1.chat.completions.create(
-                    model=self.model1,
-                    messages=messages + [{"role": "assistant", "content": text}],
-                    max_tokens=1,
-                    temperature=0,
-                    top_p=1,
-                )
+                response = self.llm1.chat.completions.create(**new_params)
                 if (
                     response.choices[0].message.content.strip()[0]
                     in self.prompts.ALL_ACTIONS

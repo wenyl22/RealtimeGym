@@ -160,16 +160,21 @@ class OvercookedEnv(BaseEnv):
             action = Action.INTERACT
         else:
             action = Action.STAY
-        self.gym_env.script_agent[0].next_action = action
-        (
-            eval_ob,
-            eval_share_ob,
-            eval_reward,
-            eval_done,
-            eval_info,
-            eval_available_action,
-            joint_action,
-        ) = self.gym_env.step([[0], [0]])
+        if self.gym_env.script_agent[0] is not None and hasattr(
+            self.gym_env.script_agent[0], "next_action"
+        ):
+            self.gym_env.script_agent[0].next_action = action
+            (
+                eval_ob,
+                eval_share_ob,
+                eval_reward,
+                eval_done,
+                eval_info,
+                eval_available_action,
+                joint_action,
+            ) = self.gym_env.step([[0], [0]])
+        else:
+            raise ValueError("Script agent is not properly initialized.")
         self.reward += sum(eval_reward[0])
         self.terminal = eval_done[0]
         self.history[0].append(Action.A_TO_CHAR[joint_action[0]])
@@ -364,6 +369,7 @@ class OvercookedEnv(BaseEnv):
         # }
 
     def summary(self):
+        assert self.all_args is not None and self.all_args.layout_name is not None
         print(
             f"Seed {self.seed} - {self.all_args.layout_name} turn: {self.game_turn}, reward: {self.reward}"
         )

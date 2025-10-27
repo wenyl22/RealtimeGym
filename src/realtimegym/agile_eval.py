@@ -66,6 +66,10 @@ def check_args(args):
         assert args.internal_budget == 0, (
             "Internal budget must be 0 when mode is planning."
         )
+    else:
+        assert args.internal_budget > 0, (
+            "Internal budget must be greater than 0 when mode is reactive or agile."
+        )
     assert args.internal_budget <= args.time_pressure, (
         "Internal budget must be less than or equal to time pressure when method is fast."
     )
