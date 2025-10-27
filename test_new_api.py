@@ -14,6 +14,8 @@ import sys
 
 sys.path.insert(0, "src")
 
+from typing import Any, Optional
+
 import realtimegym
 
 print("=" * 60)
@@ -50,16 +52,16 @@ print("-" * 60)
 
 # Create a simple mock agent to test the API
 class MockAgent:
-    def __init__(self):
-        self.current_observation = None
-        self.action = "S"
+    def __init__(self) -> None:
+        self.current_observation: Optional[dict[str, Any]] = None
+        self.action: str = "S"
 
-    def observe(self, obs):
+    def observe(self, obs: dict[str, Any]) -> None:
         """Receive observation from environment."""
         self.current_observation = obs
         print(f"  Agent observed: game_turn={obs.get('game_turn', 0)}")
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[int] = None) -> None:
         """Process observation and decide action."""
         if self.current_observation is None:
             return
@@ -68,7 +70,7 @@ class MockAgent:
         self.action = "U" if turn % 2 == 0 else "S"
         print(f"  Agent thinking (timeout={timeout}): chose action '{self.action}'")
 
-    def act(self):
+    def act(self) -> str:
         """Return the chosen action."""
         return self.action
 

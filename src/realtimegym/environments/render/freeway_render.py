@@ -1,9 +1,11 @@
-import pygame
 import os
+from typing import Any
+
+import pygame
 
 
 class FreewayRender:
-    def __init__(self, cell_size=60):
+    def __init__(self, cell_size: int = 60) -> None:
         pygame.init()
         self.cell_size = cell_size
         self.width = 9 * cell_size  # 9 columns
@@ -13,7 +15,7 @@ class FreewayRender:
         self.load_sprites()
         self.font = pygame.font.Font(None, 36)
 
-    def load_sprites(self):
+    def load_sprites(self) -> None:
         sprite_files = {
             "chicken": "chicken.png",
             "car_1": "car1.png",
@@ -46,7 +48,7 @@ class FreewayRender:
                     f"Sprite file {filename} not found in {self.assets_path}."
                 )
 
-    def render(self, env):
+    def render(self, env: Any) -> pygame.Surface:  # noqa: ANN401
         surface = pygame.Surface((self.width, self.height))
         surface.fill((255, 255, 255))
         for i in range(10):  # rows
@@ -95,7 +97,9 @@ class FreewayRender:
 
         return surface
 
-    def get_vehicle_sprite(self, vehicle_length, is_right_direction):
+    def get_vehicle_sprite(
+        self, vehicle_length: int, is_right_direction: bool
+    ) -> pygame.Surface:
         sprite_name = f"car_{vehicle_length}"
         base_sprite = self.sprites[sprite_name]
 
@@ -104,7 +108,7 @@ class FreewayRender:
         else:
             return pygame.transform.flip(base_sprite, True, False)
 
-    def draw_game_info(self, surface, env):
+    def draw_game_info(self, surface: pygame.Surface, env: Any) -> None:  # noqa: ANN401
         info_text = f"Turn: {env.game_turn}"
         text_surface = self.font.render(info_text, True, (255, 255, 255))
 

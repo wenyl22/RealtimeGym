@@ -8,6 +8,8 @@ This demonstrates:
 4. Managing state across steps
 """
 
+from typing import Any, Optional
+
 import realtimegym
 
 
@@ -21,14 +23,21 @@ class StatefulAgent:
     - Using timeout information
     """
 
-    def __init__(self, memory_size=5):
-        self.current_observation = None
-        self.observation_history = []
-        self.memory_size = memory_size
-        self.action_counts = {"U": 0, "D": 0, "L": 0, "R": 0, "S": 0, "I": 0}
-        self.chosen_action = "S"
+    def __init__(self, memory_size: int = 5) -> None:
+        self.current_observation: Optional[dict[str, Any]] = None
+        self.observation_history: list[dict[str, Any]] = []
+        self.memory_size: int = memory_size
+        self.action_counts: dict[str, int] = {
+            "U": 0,
+            "D": 0,
+            "L": 0,
+            "R": 0,
+            "S": 0,
+            "I": 0,
+        }
+        self.chosen_action: str = "S"
 
-    def observe(self, observation):
+    def observe(self, observation: dict[str, Any]) -> None:
         """
         Receive and store observation.
 
@@ -42,7 +51,7 @@ class StatefulAgent:
         if len(self.observation_history) > self.memory_size:
             self.observation_history.pop(0)
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[int] = None) -> None:
         """
         Decide on action based on current and past observations.
 
@@ -73,7 +82,7 @@ class StatefulAgent:
         if self.chosen_action in self.action_counts:
             self.action_counts[self.chosen_action] += 1
 
-    def act(self):
+    def act(self) -> str:
         """
         Return the chosen action.
 
@@ -82,7 +91,7 @@ class StatefulAgent:
         """
         return self.chosen_action
 
-    def get_statistics(self):
+    def get_statistics(self) -> dict[str, Any]:
         """Return statistics about agent's behavior."""
         return {
             "total_observations": len(self.observation_history),
@@ -91,7 +100,7 @@ class StatefulAgent:
         }
 
 
-def main():
+def main() -> None:
     """Run example with custom agent."""
     print("=" * 60)
     print("RealtimeGym - Custom Agent Example")

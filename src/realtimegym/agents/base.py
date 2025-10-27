@@ -1,15 +1,15 @@
+import os
 import queue
 import re
 import threading
 import time
 from collections import defaultdict
-from typing import Dict, List
+from typing import Any, NoReturn, Optional, Union
 
 import pandas as pd
 import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer
-import os
 
 # Load environment variables from .env file if it exists
 try:
@@ -23,10 +23,10 @@ except ImportError:
 class BaseAgent:
     def __init__(
         self,
-        prompts,
-        file,
-        time_unit,
-    ):
+        prompts: Any,  # noqa: ANN401 - prompts is a dynamically loaded module
+        file: str,
+        time_unit: str,
+    ) -> None:
         self.prompts = prompts
         self.file = file
         self.time_unit = time_unit
@@ -57,7 +57,9 @@ class BaseAgent:
         # New API: store current observation
         self.current_observation = None
 
-    def _resolve_env_var(self, value):
+    def _resolve_env_var(
+        self, value: Union[str, int, float, bool, None]
+    ) -> Union[str, int, float, bool, None]:
         """
         Resolve environment variable references in config values.
         Supports ${VAR_NAME} syntax.
@@ -74,7 +76,7 @@ class BaseAgent:
         # Match ${VAR_NAME} pattern
         pattern = r"\$\{([^}]+)\}"
 
-        def replace_env_var(match):
+        def replace_env_var(match: re.Match[str]) -> str:
             var_name = match.group(1)
             env_value = os.getenv(var_name)
             if env_value is None:
@@ -86,7 +88,7 @@ class BaseAgent:
 
         return re.sub(pattern, replace_env_var, value)
 
-    def config_model1(self, model1_config, internal_budget):
+    def config_model1(self, model1_config: str, internal_budget: int) -> None:
         with open(model1_config, "r") as f:
             self.model1_config = yaml.safe_load(f)
 
@@ -100,7 +102,7 @@ class BaseAgent:
         self.model1 = self.model1_config["model"]
         self.internal_budget = internal_budget
 
-    def config_model2(self, model2_config):
+    def config_model2(self, model2_config: str) -> None:
         with open(model2_config, "r") as f:
             self.model2_config = yaml.safe_load(f)
 
@@ -117,7 +119,7 @@ class BaseAgent:
                 self.model2_config["tokenizer"]
             )
 
-    def observe(self, observation):
+    def observe(self, observation: dict[str, Any]) -> None:
         """
         Receive and store the current observation from the environment.
 
@@ -126,7 +128,7 @@ class BaseAgent:
         """
         self.current_observation = observation
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[float] = None) -> NoReturn:
         """
         Process the current observation and decide on an action.
 
@@ -135,7 +137,7 @@ class BaseAgent:
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def act(self):
+    def act(self) -> Optional[str]:
         """
         Return the chosen action. Returns None if no action was decided.
 
@@ -144,7 +146,7 @@ class BaseAgent:
         """
         return self.action
 
-    def log(self, reward, reset):
+    def log(self, reward: float, reset: bool) -> None:
         assert self.current_observation is not None, "Current observation is not set!"
         self.logs["render"].append(self.current_observation["state_string"])
         self.logs["action"].append(self.action)
@@ -161,7 +163,7 @@ class BaseAgent:
         df = pd.DataFrame(self.logs)
         df.to_csv(self.file)
 
-    def resume_from_checkpoint(self, env, checkpoint_file):
+    def resume_from_checkpoint(self, env: Any, checkpoint_file: str) -> None:  # noqa: ANN401
         df = pd.read_csv(checkpoint_file)
         self.logs = df.to_dict("list")  # remove unnamed column
         self.logs.pop("Unnamed: 0", None)
@@ -171,11 +173,15 @@ class BaseAgent:
         df = pd.DataFrame(self.logs)
         df.to_csv(self.file)
 
-    def truncate_logs(self):
+    def truncate_logs(self) -> NoReturn:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
     def generate(
-        self, llm, model: str, messages: List[Dict], sampling_params: Dict
+        self,
+        llm: OpenAI,
+        model: str,
+        messages: list[dict[str, str]],
+        sampling_params: dict[str, Any],
     ) -> tuple[str, int]:
         params = sampling_params
         params["messages"] = messages
@@ -209,7 +215,11 @@ class BaseAgent:
                 time.sleep(1)
 
     def start_planning_stream(
-        self, llm, model: str, messages: List[Dict], sampling_params: Dict
+        self,
+        llm: OpenAI,
+        model: str,
+        messages: list[dict[str, str]],
+        sampling_params: dict[str, Any],
     ) -> None:
         self.planning_queue = queue.Queue()
         self.planning_done = threading.Event()
@@ -218,7 +228,7 @@ class BaseAgent:
         params["model"] = model
         params["stream"] = True
 
-        def planning_worker():
+        def planning_worker() -> None:
             assert self.planning_queue is not None, "Planning queue is not initialized!"
             assert self.planning_done is not None, (
                 "Planning done event is not initialized!"
@@ -234,7 +244,7 @@ class BaseAgent:
 
         threading.Thread(target=planning_worker, daemon=True).start()
 
-    def get_planning_chunks(self):
+    def get_planning_chunks(self) -> tuple[str, int]:
         text = ""
         token_num = 0
         assert self.planning_queue is not None, "Planning queue is not initialized!"
@@ -260,11 +270,18 @@ class BaseAgent:
                 token_num = chunk.usage.completion_tokens
         return text, token_num
 
-    def is_planning_finished(self):
+    def is_planning_finished(self) -> bool:
         assert self.planning_done is not None, "Planning done event is not initialized!"
         return self.planning_done.is_set()
 
-    def start_reactive_stream(self, llm, model, messages, sampling_params, max_time):
+    def start_reactive_stream(
+        self,
+        llm: OpenAI,
+        model: str,
+        messages: list[dict[str, str]],
+        sampling_params: dict[str, Any],
+        max_time: float,
+    ) -> tuple[str, int]:
         params = sampling_params
         params["messages"] = messages
         params["model"] = model
@@ -287,7 +304,9 @@ class BaseAgent:
             time.sleep(max_time - (current_time - start_time))
         return text, token_num
 
-    def reactive_inference(self, messages, budget):
+    def reactive_inference(
+        self, messages: list[dict[str, str]], budget: float
+    ) -> tuple[str, int]:
         assert self.model1 is not None, "Reactive LLM is not initialized!"
         sampling_params = self.model1_config.get("inference_parameters", {})
         assert isinstance(self.llm1, OpenAI), "LLM1 is not an instance of OpenAI!"
@@ -299,7 +318,8 @@ class BaseAgent:
                 )
             else:
                 sampling_params["max_tokens"] = min(
-                    self.internal_budget, sampling_params.get("max_tokens", 80000)
+                    self.internal_budget,
+                    sampling_params.get("max_tokens", 80000),
                 )
             text, token_num = self.generate(
                 self.llm1, self.model1, messages, sampling_params
@@ -346,7 +366,9 @@ class BaseAgent:
                 text += self.prompts.DEFAULT_ACTION + "}"
         return text, token_num
 
-    def planning_inference(self, messages, budget, game_turn):
+    def planning_inference(
+        self, messages: list[dict[str, str]], budget: float, game_turn: int
+    ) -> tuple[str, int, int]:
         assert self.model2 is not None, "Planning LLM is not initialized!"
         token_num = 0
         sampling_params = self.model2_config.get("inference_parameters", {})
@@ -395,7 +417,7 @@ class BaseAgent:
         return text, token_num, turn
 
 
-def extract_boxed(text, default_value=""):
+def extract_boxed(text: str, default_value: str = "") -> str:
     """
     Extracts the \boxed{...} text from the input string.
     """

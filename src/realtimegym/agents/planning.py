@@ -1,4 +1,5 @@
 import re
+from typing import Any, Optional
 
 from .base import BaseAgent, extract_boxed
 
@@ -6,17 +7,17 @@ from .base import BaseAgent, extract_boxed
 class PlanningAgent(BaseAgent):
     def __init__(
         self,
-        prompts,
-        file,
-        time_unit,
-        model2_config,
-        skip_action=False,
-    ):
+        prompts: Any,  # noqa: ANN401 - prompts is a dynamically loaded module
+        file: str,
+        time_unit: str,
+        model2_config: str,
+        skip_action: bool = False,
+    ) -> None:
         super().__init__(prompts, file, time_unit)
         self.config_model2(model2_config)
         self.skip_action = skip_action
 
-    def truncate_logs(self):
+    def truncate_logs(self) -> None:
         final_step, final_plan = 0, ""
         for i in range(len(self.logs["action"])):
             if "model2_prompt" in self.logs and self.logs["model2_prompt"][i] != "":
@@ -26,7 +27,7 @@ class PlanningAgent(BaseAgent):
         for col in self.logs:
             self.logs[col] = self.logs[col][:final_step]
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[float] = None) -> None:
         assert timeout is not None and self.current_observation is not None
         budget = timeout
 

@@ -63,13 +63,13 @@ exclude = [
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
     "src/realtimegym/environments/overcooked_new/**",
-    "src/realtimegym/environments/freeway.py",
 ]
 
 # Note: ty does not currently have a rule to disallow implicit Any types
 # All type annotations should be added manually for better type safety
 
 [tool.ruff]
+select = ["ANN"]
 exclude = [
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details

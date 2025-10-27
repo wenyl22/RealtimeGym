@@ -1,19 +1,21 @@
+from typing import Any, NoReturn
+
 import numpy as np
 
 
 class BaseEnv:
-    def __init__(self):
+    def __init__(self) -> None:
         self.random = np.random.RandomState()
         self.seed = 42
         self.terminal = False
         self.game_turn = 0
         self.reward = 0
 
-    def set_seed(self, seed):
+    def set_seed(self, seed: int) -> None:
         self.random = np.random.RandomState(seed)
         self.seed = seed
 
-    def reset(self):
+    def reset(self) -> NoReturn:
         """
         Reset the environment and return initial observation and done flag.
 
@@ -23,7 +25,7 @@ class BaseEnv:
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def step(self, action):
+    def step(self, action: str) -> NoReturn:
         """
         Execute action in the environment.
 
@@ -38,19 +40,19 @@ class BaseEnv:
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def state_string(self):
+    def state_string(self) -> NoReturn:
         """
         Visualization in string format.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def state_builder(self):
+    def state_builder(self) -> NoReturn:
         """
         Build a state representation for agents.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def observe(self):
+    def observe(self) -> dict[str, Any]:
         """
         Get the current observation.
         """

@@ -1,5 +1,5 @@
 import re
-
+from typing import Any, Optional
 
 from .base import BaseAgent, extract_boxed
 
@@ -7,13 +7,13 @@ from .base import BaseAgent, extract_boxed
 class AgileThinker(BaseAgent):
     def __init__(
         self,
-        prompts,
-        file,
-        time_unit,
-        model1_config,
-        model2_config,
-        internal_budget,
-    ):
+        prompts: Any,  # noqa: ANN401 - prompts is a dynamically loaded module
+        file: str,
+        time_unit: str,
+        model1_config: str,
+        model2_config: str,
+        internal_budget: int,
+    ) -> None:
         super().__init__(prompts, file, time_unit)
         self.config_model1(model1_config, internal_budget)
         self.config_model2(model2_config)
@@ -22,7 +22,7 @@ class AgileThinker(BaseAgent):
                 "Tokenizer must be initialized for agile agent under token-based time unit."
             )
 
-    def truncate_logs(self):
+    def truncate_logs(self) -> None:
         final_step = 0
         for i in range(len(self.logs["action"])):
             if "model2_prompt" in self.logs and self.logs["model2_prompt"][i] != "":
@@ -30,7 +30,7 @@ class AgileThinker(BaseAgent):
         for col in self.logs:
             self.logs[col] = self.logs[col][:final_step]
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[float] = None) -> None:
         assert self.current_observation is not None and timeout is not None
         budget = timeout
         observation = self.current_observation

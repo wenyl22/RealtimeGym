@@ -5,23 +5,25 @@ This shows how to use Freeway, Snake, and Overcooked environments
 with the same agent interface.
 """
 
+from typing import Any, Optional
+
 import realtimegym
 
 
 class UniversalAgent:
     """An agent that works with all environments."""
 
-    def __init__(self):
-        self.current_observation = None
-        self.action = "S"
-        self.step_count = 0
+    def __init__(self) -> None:
+        self.current_observation: Optional[dict[str, Any]] = None
+        self.action: str = "S"
+        self.step_count: int = 0
 
-    def observe(self, observation):
+    def observe(self, observation: dict[str, Any]) -> None:
         """Receive observation from environment."""
         self.current_observation = observation
         self.step_count += 1
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[int] = None) -> None:
         """Simple decision making."""
         if self.current_observation is None:
             return
@@ -30,12 +32,12 @@ class UniversalAgent:
         actions = ["U", "D", "L", "R", "S"]
         self.action = actions[self.step_count % len(actions)]
 
-    def act(self):
+    def act(self) -> str:
         """Return the chosen action."""
         return self.action
 
 
-def run_environment(env_id, max_steps=10):
+def run_environment(env_id: str, max_steps: int = 10) -> None:
     """Run a single environment with the agent."""
     print(f"\n{'=' * 60}")
     print(f"Running {env_id}")
@@ -75,7 +77,7 @@ def run_environment(env_id, max_steps=10):
     print(f"  Completed: {done}")
 
 
-def main():
+def main() -> None:
     """Run all three environments."""
     print("\n" + "=" * 60)
     print("RealtimeGym - All Environments Example")

@@ -1,9 +1,11 @@
-import pygame
 import os
+from typing import Any, Optional
+
+import pygame
 
 
 class SnakeRender:
-    def __init__(self, cell_size=60):
+    def __init__(self, cell_size: int = 60) -> None:
         pygame.init()
         self.cell_size = cell_size
         self.assets_path = os.path.join(os.path.dirname(__file__), "assets", "snake")
@@ -15,7 +17,7 @@ class SnakeRender:
         self.load_sprites()
         self.font = pygame.font.Font(None, 36)
 
-    def load_sprites(self):
+    def load_sprites(self) -> None:
         sprite_files = {
             "apple": "apple.png",
             "wall": "brick-wall.png",
@@ -111,7 +113,13 @@ class SnakeRender:
                 f"Snake sprite sheet not found at {snake_path}. Please ensure the file exists."
             )
 
-    def get_snake_body_sprite(self, prev_pos, curr_pos, next_pos, board_size):
+    def get_snake_body_sprite(
+        self,
+        prev_pos: Optional[tuple[int, int]],
+        curr_pos: tuple[int, int],
+        next_pos: Optional[tuple[int, int]],
+        board_size: int,
+    ) -> pygame.Surface:
         if prev_pos is None or next_pos is None:
             return self.snake_sprites["straight_horizontal"]
 
@@ -138,7 +146,9 @@ class SnakeRender:
 
         return self.snake_sprites["straight_horizontal"]
 
-    def get_snake_tail_sprite(self, prev_pos, curr_pos):
+    def get_snake_tail_sprite(
+        self, prev_pos: tuple[int, int], curr_pos: tuple[int, int]
+    ) -> pygame.Surface:
         if prev_pos is None:
             return self.snake_sprites["tail_left"]
 
@@ -155,10 +165,11 @@ class SnakeRender:
         }
 
         return self.snake_sprites.get(
-            direction_map.get(direction, "tail_left"), self.snake_sprites["tail_left"]
+            direction_map.get(direction, "tail_left"),
+            self.snake_sprites["tail_left"],
         )
 
-    def render(self, env):
+    def render(self, env: Any) -> pygame.Surface:  # noqa: ANN401
         size = env.B * self.cell_size
         surface = pygame.Surface((size, size))
         surface.fill((0, 51, 51))
@@ -191,7 +202,12 @@ class SnakeRender:
         for i, (x, y) in enumerate(env.snake):
             pos = (x * self.cell_size, (env.B - 1 - y) * self.cell_size)
             if i == len(env.snake) - 1:
-                direction_map = {"R": "right", "D": "down", "L": "left", "U": "up"}
+                direction_map = {
+                    "R": "right",
+                    "D": "down",
+                    "L": "left",
+                    "U": "up",
+                }
                 if len(env.snake) == 1:
                     head_sprite = self.sprites[
                         f"head_{direction_map.get(env.dir, 'up')}"
@@ -222,7 +238,13 @@ class SnakeRender:
         cropped_surface.blit(surface, (0, 0), crop_rect)
         return cropped_surface
 
-    def draw_life_bar(self, surface, life, max_life, pos):
+    def draw_life_bar(
+        self,
+        surface: pygame.Surface,
+        life: int,
+        max_life: int,
+        pos: tuple[int, int],
+    ) -> None:
         bar_width = self.cell_size - 4
         bar_height = 6
         bar_x = pos[0] + 2
@@ -248,7 +270,7 @@ class SnakeRender:
 
         pygame.draw.rect(surface, (255, 255, 255), background_rect, 1)
 
-    def draw_game_info(self, surface, env):
+    def draw_game_info(self, surface: pygame.Surface, env: Any) -> None:  # noqa: ANN401
         info_text = f"Turn: {env.game_turn}, Score: {env.reward}"
         text_surface = self.font.render(info_text, True, (255, 255, 255))
 

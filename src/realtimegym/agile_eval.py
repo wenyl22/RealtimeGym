@@ -6,6 +6,8 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
+from types import ModuleType
+from typing import Any
 
 import pandas as pd
 import pygame
@@ -18,7 +20,7 @@ from realtimegym.agents.planning import PlanningAgent
 from realtimegym.agents.reactive import ReactiveAgent
 
 
-def _load_prompt_module(specifier: str):
+def _load_prompt_module(specifier: str) -> ModuleType:
     """
     Load prompt module from:
       - dotted module name (recommended), e.g. "realtimegym.prompts.freeway"
@@ -61,7 +63,7 @@ def _load_prompt_module(specifier: str):
         )
 
 
-def check_args(args):
+def check_args(args: argparse.Namespace) -> None:
     if args.mode == "planning":
         assert args.internal_budget == 0, (
             "Internal budget must be 0 when mode is planning."
@@ -75,7 +77,7 @@ def check_args(args):
     )
 
 
-def game_loop(file, raw_seed, args):
+def game_loop(file: str, raw_seed: int, args: argparse.Namespace) -> dict[str, Any]:
     version = (
         "0"
         if args.cognitive_load == "E"
@@ -180,7 +182,7 @@ def game_loop(file, raw_seed, args):
     return ret
 
 
-def main():
+def main() -> None:
     """Main CLI entry point for the Real-time Reasoning Gym."""
     args = argparse.ArgumentParser(
         description="Real-time reasoning gym configurations."

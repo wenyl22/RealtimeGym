@@ -4,8 +4,10 @@
 # This module uses vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
 # See overcooked_new/THIRD_PARTY_NOTICE.md for license and attribution details.
 
+import argparse
 import os
 from pathlib import Path
+from typing import Any, Optional
 
 from .base import BaseEnv
 from .overcooked_new.config import get_config
@@ -34,7 +36,7 @@ orientation_to_char_mapping = {
 }
 
 
-def parse_args(args, parser):
+def parse_args(args: list, parser: argparse.ArgumentParser) -> argparse.Namespace:
     parser.add_argument(
         "--layout_name",
         type=str,
@@ -98,7 +100,9 @@ def parse_args(args, parser):
     return all_args
 
 
-def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
+def setup_env(
+    seed: int, cognitive_load: str, save_trajectory_gifs: bool = False
+) -> tuple[BaseEnv, int, Optional[OvercookedRender]]:
     parser = get_config()
     all_args = parse_args([], parser)
     all_args.layout_name = cognitive_load_layout_mapping[cognitive_load]
@@ -122,12 +126,12 @@ def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
 
 
 class OvercookedEnv(BaseEnv):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.all_args = None  # type: ignore
         self.run_dir = None  # type: ignore
 
-    def reset(self):
+    def reset(self) -> tuple[dict[str, Any], bool]:
         self.gym_env = Overcooked(
             self.all_args, self.run_dir, featurize_type=("bc", "bc")
         )
@@ -145,7 +149,7 @@ class OvercookedEnv(BaseEnv):
         # Return initial observation and done flag
         return self.observe(), self.terminal
 
-    def go(self, a):
+    def go(self, a: str) -> tuple[dict[str, Any], bool, float]:
         self.game_turn += 1
 
         if a == "U":
@@ -181,12 +185,12 @@ class OvercookedEnv(BaseEnv):
         self.history[1].append(Action.A_TO_CHAR[joint_action[1]])
         return self.observe(), self.terminal, self.reward
 
-    def step(self, a):
+    def step(self, a: str) -> tuple[dict[str, Any], bool, float, bool]:
         """Legacy method for backward compatibility."""
         obs, done, reward = self.go(a)
         return obs, done, reward, False
 
-    def state_string(self):
+    def state_string(self) -> str:
         ret = self.gym_env.base_mdp.state_string(self.gym_env.base_env.state)
         ret = ret.split("\n")
         ret = ret[::-1]
@@ -195,7 +199,7 @@ class OvercookedEnv(BaseEnv):
         ret = ret.replace("x", "↓").replace("y", "↑")
         return ret
 
-    def state_builder(self):
+    def state_builder(self) -> dict[str, Any]:
         """
         "players": [p.to_dict() for p in self.players]
             - position, orientation, held_object
@@ -221,7 +225,7 @@ class OvercookedEnv(BaseEnv):
         }
         return state
 
-    def observe(self):
+    def observe(self) -> dict[str, Any]:
         if self.terminal:
             return {}
         return {
@@ -368,7 +372,7 @@ class OvercookedEnv(BaseEnv):
         #     "state_string": self.state_string(),
         # }
 
-    def summary(self):
+    def summary(self) -> None:
         assert self.all_args is not None and self.all_args.layout_name is not None
         print(
             f"Seed {self.seed} - {self.all_args.layout_name} turn: {self.game_turn}, reward: {self.reward}"

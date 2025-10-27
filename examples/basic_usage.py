@@ -7,23 +7,25 @@ This example demonstrates:
 3. Running the basic game loop
 """
 
+from typing import Any, Optional
+
 import realtimegym
 
 
 class SimpleAgent:
     """A simple rule-based agent for demonstration."""
 
-    def __init__(self, default_action="S"):
-        self.current_observation = None
-        self.default_action = default_action
-        self.action = default_action
+    def __init__(self, default_action: str = "S") -> None:
+        self.current_observation: Optional[dict[str, Any]] = None
+        self.default_action: str = default_action
+        self.action: str = default_action
 
-    def observe(self, observation):
+    def observe(self, observation: dict[str, Any]) -> None:
         """Receive observation from environment."""
         self.current_observation = observation
         print(f"  Agent observed turn {observation['game_turn']}")
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[int] = None) -> None:
         """Decide on an action based on observation."""
         if self.current_observation is None:
             return
@@ -33,12 +35,12 @@ class SimpleAgent:
         self.action = "U" if turn % 2 == 0 else "S"
         print(f"  Agent decided to take action: {self.action}")
 
-    def act(self):
+    def act(self) -> str:
         """Return the chosen action."""
         return self.action
 
 
-def main():
+def main() -> None:
     """Run a simple game with the basic agent."""
     print("=" * 60)
     print("RealtimeGym - Basic Usage Example")

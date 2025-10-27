@@ -1,7 +1,7 @@
 """Snake game prompts - Python logic for state-to-description conversion."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -23,8 +23,8 @@ FAST_AGENT_PROMPT = _TEMPLATES["fast_agent_prompt"]
 
 
 def state_to_description(
-    state_for_llm: Dict[str, Any], mode: Optional[str] = None
-) -> Union[str, Dict[str, str]]:
+    state_for_llm: dict[str, Any], mode: Optional[str] = None
+) -> Union[str, dict[str, str]]:
     """Convert game state to natural language description.
 
     Args:

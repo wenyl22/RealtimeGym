@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Any, Optional
 
 import numpy as np
 
@@ -12,7 +13,9 @@ seed_mapping = {
 }
 
 
-def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
+def setup_env(
+    seed: int, cognitive_load: str, save_trajectory_gifs: bool = False
+) -> tuple[BaseEnv, int, Optional[SnakeRender]]:
     env = SnakeEnv()
     env.set_seed(seed_mapping[cognitive_load][seed])
     render = None
@@ -22,7 +25,7 @@ def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
 
 
 class SnakeEnv(BaseEnv):
-    def reset(self):
+    def reset(self) -> tuple[dict[str, Any], bool]:
         self.B = 8
         self.true_seed = self.seed % 1000
         self.random = np.random.RandomState(self.true_seed)
@@ -65,7 +68,7 @@ class SnakeEnv(BaseEnv):
         # Return initial observation and done flag
         return self.observe(), self.terminal
 
-    def spawn_food(self):
+    def spawn_food(self) -> None:
         x, y = self.coords[self.idx]
         self.idx += 1
         if self.idx >= len(self.coords):
@@ -79,7 +82,7 @@ class SnakeEnv(BaseEnv):
         self.food.append(new_food)
         self.food_attributes[x][y] = (life_span, value)
 
-    def step(self, a):
+    def step(self, a: str) -> tuple[dict[str, Any], bool, float, bool]:
         self.r = 0
         self.game_turn += 1
         if (
@@ -146,7 +149,7 @@ class SnakeEnv(BaseEnv):
         self.terminal = True if self.game_turn >= 100 else False
         return self.observe(), self.terminal, self.reward, False
 
-    def state_string(self):
+    def state_string(self) -> str:
         grid_string = ""
         snake_length = len(self.snake)
         for i in range(self.B):
@@ -173,7 +176,7 @@ class SnakeEnv(BaseEnv):
             grid_string += "\n"
         return grid_string
 
-    def get_possible_actions(self):
+    def get_possible_actions(self) -> list[str]:
         # return 'L', 'R', 'U', 'D' removing the reverse of the current direction
         if self.dir == "L":
             actions = ["L", "U", "D"]
@@ -185,7 +188,7 @@ class SnakeEnv(BaseEnv):
             actions = ["L", "R", "D"]
         return actions
 
-    def state_builder(self):
+    def state_builder(self) -> dict[str, Any]:
         snake = deepcopy(self.snake[::-1])
         foods = []
         for x, y in self.food:
@@ -221,5 +224,5 @@ class SnakeEnv(BaseEnv):
         #     "state_string": self.state_string(),
         # }
 
-    def summary(self):
+    def summary(self) -> None:
         print(f"Seed {self.seed} - {self.game_turn} turns, reward: {self.reward}")

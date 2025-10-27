@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 import numpy as np
 
 from .base import BaseEnv
@@ -37,7 +39,9 @@ seed_mapping = {
 }
 
 
-def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
+def setup_env(
+    seed: int, cognitive_load: str, save_trajectory_gifs: bool = False
+) -> tuple[BaseEnv, int, Optional[FreewayRender]]:
     assert seed in seed_mapping[cognitive_load]
     env = FreewayEnv()
     env.set_seed(seed_mapping[cognitive_load][seed])
@@ -48,7 +52,7 @@ def setup_env(seed, cognitive_load, save_trajectory_gifs=False):
 
 
 class FreewayEnv(BaseEnv):
-    def reset(self):
+    def reset(self) -> tuple[dict[str, Any], bool]:
         self.chosen_freeways = self.random.choice(range(0, 8), 8, replace=False)
         self.chosen = [True if i in self.chosen_freeways else False for i in range(8)]
         self._randomize_cars()
@@ -59,7 +63,7 @@ class FreewayEnv(BaseEnv):
         self.terminal = False
         return self.observe(), self.terminal
 
-    def _randomize_cars(self):
+    def _randomize_cars(self) -> None:
         directions = np.sign(self.random.rand(8) - 0.5).astype(int)
         self.cars = []
         # Patterns:
@@ -97,7 +101,7 @@ class FreewayEnv(BaseEnv):
             if not self.chosen[self.cars[i][1] - 1]:
                 self.cars[i] = [None, self.cars[i][1], None, None, None]
 
-    def step(self, a):
+    def step(self, a: str) -> tuple[dict[str, Any], bool, float, bool]:
         # return: (reward, reset)
         self.r = False  # reset or not
         self.reward -= 1
@@ -149,7 +153,7 @@ class FreewayEnv(BaseEnv):
             self.game_turn = G
         return self.observe(), self.terminal, self.reward, self.r
 
-    def state_string(self):
+    def state_string(self) -> str:
         grid_string = ""
         for i in range(10):  # rows, i.e. y
             for j in range(9):  # columns, i.e. x
@@ -184,7 +188,7 @@ class FreewayEnv(BaseEnv):
             grid_string += "\n"
         return grid_string
 
-    def state_builder(self):
+    def state_builder(self) -> dict[str, Any]:
         player_states = 9 - self.pos
         car_states = []
         for car in self.cars:
@@ -245,7 +249,7 @@ class FreewayEnv(BaseEnv):
     #         "game_turn": self.game_turn,
     #     }
 
-    def summary(self):
+    def summary(self) -> None:
         if self.terminal:
             print(
                 f"Seed {self.seed} finished the game in {self.game_turn} turns with reward {self.reward}."

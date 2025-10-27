@@ -19,7 +19,7 @@ _REGISTRY = {
 }
 
 
-def make(env_id: str, seed: int = 0, render: bool = False):
+def make(env_id: str, seed: int = 0, render: bool = False) -> tuple[Any, int, Any]:
     """
     Create an environment instance.
 
@@ -62,7 +62,7 @@ def make(env_id: str, seed: int = 0, render: bool = False):
 
 
 # Export commonly used classes using lazy imports
-def __getattr__(name):
+def __getattr__(name: str) -> Any:  # noqa: ANN401
     """Lazy imports for agents and environments to avoid requiring all dependencies upfront."""
     if name == "BaseAgent":
         from realtimegym.agents.base import BaseAgent

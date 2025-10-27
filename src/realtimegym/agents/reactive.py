@@ -1,4 +1,5 @@
 import re
+from typing import Any, Optional
 
 from .base import BaseAgent, extract_boxed
 
@@ -6,19 +7,19 @@ from .base import BaseAgent, extract_boxed
 class ReactiveAgent(BaseAgent):
     def __init__(
         self,
-        prompts,
-        file,
-        time_unit,
-        model1_config,
-        internal_budget,
-    ):
+        prompts: Any,  # noqa: ANN401 - prompts is a dynamically loaded module
+        file: str,
+        time_unit: str,
+        model1_config: str,
+        internal_budget: int,
+    ) -> None:
         super().__init__(prompts, file, time_unit)
         self.config_model1(model1_config, internal_budget)
 
-    def truncate_logs(self):
+    def truncate_logs(self) -> None:
         return
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[float] = None) -> None:
         assert self.current_observation is not None and timeout is not None
         budget = timeout
         observation = self.current_observation

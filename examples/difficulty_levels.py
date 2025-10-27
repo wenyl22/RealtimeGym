@@ -7,21 +7,23 @@ RealtimeGym environments support three difficulty levels:
 - v2: Hard
 """
 
+from typing import Any, Optional
+
 import realtimegym
 
 
 class AdaptiveAgent:
     """Agent that adapts to different difficulty levels."""
 
-    def __init__(self):
-        self.current_observation = None
-        self.action = "S"
+    def __init__(self) -> None:
+        self.current_observation: Optional[dict[str, Any]] = None
+        self.action: str = "S"
 
-    def observe(self, observation):
+    def observe(self, observation: dict[str, Any]) -> None:
         """Receive observation."""
         self.current_observation = observation
 
-    def think(self, timeout=None):
+    def think(self, timeout: Optional[int] = None) -> None:
         """Make decision."""
         if self.current_observation is None:
             return
@@ -30,12 +32,12 @@ class AdaptiveAgent:
         # Alternate between moving up and staying
         self.action = "U" if turn % 2 == 0 else "S"
 
-    def act(self):
+    def act(self) -> str:
         """Return action."""
         return self.action
 
 
-def test_difficulty_level(env_id, max_steps=15):
+def test_difficulty_level(env_id: str, max_steps: int = 15) -> tuple[int, float]:
     """Test a specific difficulty level."""
     print(f"\nTesting {env_id}")
     print("-" * 60)
@@ -63,7 +65,7 @@ def test_difficulty_level(env_id, max_steps=15):
     return step_count, total_reward
 
 
-def main():
+def main() -> None:
     """Compare all difficulty levels."""
     print("=" * 60)
     print("RealtimeGym - Difficulty Levels Example")
