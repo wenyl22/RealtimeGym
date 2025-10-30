@@ -147,7 +147,7 @@ class SnakeRender:
         return self.snake_sprites["straight_horizontal"]
 
     def get_snake_tail_sprite(
-        self, prev_pos: tuple[int, int], curr_pos: tuple[int, int]
+        self, prev_pos: Optional[tuple[int, int]], curr_pos: tuple[int, int]
     ) -> pygame.Surface:
         if prev_pos is None:
             return self.snake_sprites["tail_left"]

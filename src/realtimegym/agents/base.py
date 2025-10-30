@@ -94,6 +94,7 @@ class BaseAgent:
 
         # Resolve environment variables in api_key
         api_key = self._resolve_env_var(self.model1_config["api_key"])
+        assert isinstance(api_key, str), "API key must be a string after resolution."
 
         self.llm1 = OpenAI(
             api_key=api_key,
@@ -108,6 +109,7 @@ class BaseAgent:
 
         # Resolve environment variables in api_key
         api_key = self._resolve_env_var(self.model2_config["api_key"])
+        assert isinstance(api_key, str), "API key must be a string after resolution."
 
         self.llm2 = OpenAI(
             api_key=api_key,
@@ -371,6 +373,7 @@ class BaseAgent:
     ) -> tuple[str, int, int]:
         assert self.model2 is not None, "Planning LLM is not initialized!"
         token_num = 0
+        assert isinstance(self.llm2, OpenAI), "LLM2 is not an instance of OpenAI!"
         sampling_params = self.model2_config.get("inference_parameters", {})
         if self.time_unit == "token":
             if messages != []:
